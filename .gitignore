@@ -1,0 +1,38 @@
+# Abhängigkeiten / Node-Module
+node_modules/
+.pnp
+.pnp.js
+
+# Build-Ausgaben (werden beim Deployment neu erzeugt)
+.next/
+out/
+build/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Lokale Umgebungsvariablen (NIE committen — können geheime Schlüssel enthalten)
+.env
+.env.local
+.env*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Next.js TypeScript-Cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Test-Coverage
+coverage/
+
+# Vercel
+.vercel
