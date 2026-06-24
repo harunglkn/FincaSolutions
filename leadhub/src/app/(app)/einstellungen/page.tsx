@@ -2,12 +2,20 @@ import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { logout } from "../auth-actions";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Einstellungen",
 };
 
-export default function EinstellungenPage() {
+export default async function EinstellungenPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email ?? "";
+
   return (
     <>
       <Topbar
@@ -49,15 +57,22 @@ export default function EinstellungenPage() {
             <CardTitle>Konto</CardTitle>
           </CardHeader>
           <CardBody className="text-sm space-y-3">
-            <p className="text-ink-600">
-              Passwort ändern, Zwei-Faktor-Authentifizierung und
-              Datenverwaltung folgen mit der Supabase-Anbindung.
+            <div className="text-ink-600">
+              Angemeldet als{" "}
+              <span className="font-medium text-ink-900">{email}</span>
+            </div>
+            <p className="text-ink-500">
+              Passwort ändern und Zwei-Faktor-Authentifizierung folgen.
             </p>
             <div className="flex gap-2">
-              <Button variant="secondary">Passwort ändern</Button>
-              <Button variant="ghost" className="text-red-700">
-                Abmelden
+              <Button variant="secondary" disabled>
+                Passwort ändern
               </Button>
+              <form action={logout}>
+                <Button variant="ghost" className="text-red-700" type="submit">
+                  Abmelden
+                </Button>
+              </form>
             </div>
           </CardBody>
         </Card>

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
+import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
   title: "Anmelden",
 };
 
-export default function LoginPage() {
+export default async function LoginPage(props: PageProps<"/login">) {
+  const sp = await props.searchParams;
+  const raw = sp?.redirect;
+  const redirectTo =
+    typeof raw === "string" && raw.startsWith("/") ? raw : "/dashboard";
+
   return (
     <div className="flex-1 grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-brand-800 to-brand-950 text-white p-10">
@@ -38,56 +43,12 @@ export default function LoginPage() {
             Melden Sie sich mit Ihrem Händler-Konto an.
           </p>
 
-          <form className="mt-8 space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-ink-700 mb-1.5"
-              >
-                E-Mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="name@autohaus.de"
-                className="w-full h-11 px-3 rounded-lg border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-ink-700"
-                >
-                  Passwort
-                </label>
-                <Link
-                  href="#"
-                  className="text-xs font-medium text-brand-700 hover:underline"
-                >
-                  Vergessen?
-                </Link>
-              </div>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="w-full h-11 px-3 rounded-lg border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none"
-              />
-            </div>
-            <Button type="submit" className="w-full" size="lg">
-              Anmelden
-            </Button>
-          </form>
-
-          <p className="mt-6 text-xs text-ink-500 text-center">
-            Login ist Platzhalter — Anbindung an Supabase folgt.
-          </p>
+          <LoginForm redirectTo={redirectTo} />
 
           <p className="mt-8 text-sm text-ink-600 text-center">
             Noch kein Konto?{" "}
             <Link
-              href="#"
+              href="mailto:harunglkn@gmail.com?subject=Demo-Anfrage%20LeadHub"
               className="font-medium text-brand-700 hover:underline"
             >
               Demo anfragen

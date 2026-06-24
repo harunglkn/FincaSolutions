@@ -1,14 +1,6 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
-
-type NavItem = {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-};
+import { NavLink } from "@/components/layout/nav-link";
+import { createClient } from "@/lib/supabase/server";
 
 const Icon = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
@@ -22,7 +14,7 @@ const Icon = ({ d }: { d: string }) => (
   </svg>
 );
 
-const mainNav: NavItem[] = [
+const mainNav = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -52,7 +44,7 @@ const mainNav: NavItem[] = [
   },
 ];
 
-const adminNav: NavItem[] = [
+const adminNav = [
   {
     label: "Adminbereich",
     href: "/admin",
@@ -60,29 +52,22 @@ const adminNav: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
+function initialsFromEmail(email: string | undefined) {
+  if (!email) return "··";
+  const local = email.split("@")[0];
+  const parts = local.split(/[._-]/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return local.slice(0, 2).toUpperCase();
+}
 
-  const NavLink = ({ item }: { item: NavItem }) => {
-    const active =
-      pathname === item.href || pathname.startsWith(item.href + "/");
-    return (
-      <Link
-        href={item.href}
-        className={[
-          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-          active
-            ? "bg-brand-50 text-brand-800"
-            : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
-        ].join(" ")}
-      >
-        <span className={active ? "text-brand-700" : "text-ink-400"}>
-          {item.icon}
-        </span>
-        {item.label}
-      </Link>
-    );
-  };
+export async function Sidebar() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email;
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
@@ -94,28 +79,26 @@ export function Sidebar() {
           Arbeitsbereich
         </p>
         {mainNav.map((item) => (
-          <NavLink key={item.href} item={item} />
+          <NavLink key={item.href} {...item} />
         ))}
 
         <p className="px-3 mt-6 text-[11px] uppercase tracking-widest font-semibold text-ink-400 mb-2">
           Verwaltung
         </p>
         {adminNav.map((item) => (
-          <NavLink key={item.href} item={item} />
+          <NavLink key={item.href} {...item} />
         ))}
       </nav>
       <div className="px-4 py-4 border-t border-ink-100">
         <div className="flex items-center gap-3">
           <div className="grid place-items-center h-9 w-9 rounded-full bg-brand-100 text-brand-800 font-semibold text-sm">
-            HG
+            {initialsFromEmail(email)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-ink-900 truncate">
-              Harun
+              {email ?? "Gast"}
             </p>
-            <p className="text-xs text-ink-500 truncate">
-              Finca-Solutions
-            </p>
+            <p className="text-xs text-ink-500 truncate">Finca-Solutions</p>
           </div>
         </div>
       </div>
