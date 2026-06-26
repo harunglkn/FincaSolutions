@@ -1,155 +1,137 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
-import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/server";
+import {
+  LEAD_STATUS_LABEL,
+  LEAD_STATUS_TONE,
+  type Lead,
+} from "@/lib/database.types";
+import { formatEuro, formatKm } from "@/lib/format";
+import { NewLeadButton } from "./new-lead-button";
+import { SeedButton } from "../seed-button";
 
 export const metadata: Metadata = {
   title: "Leads",
 };
 
-const leads = [
-  {
-    id: "L-2401",
-    fahrzeug: "BMW 320d Touring",
-    baujahr: 2019,
-    km: "89.000",
-    verkaeufer: "Marco S.",
-    ort: "Köln",
-    angebot: "14.900 €",
-    potenzial: "13.200 €",
-    status: "Antwort offen",
-    tone: "warning" as const,
-  },
-  {
-    id: "L-2398",
-    fahrzeug: "VW Golf 7 GTI",
-    baujahr: 2017,
-    km: "112.000",
-    verkaeufer: "Tanja K.",
-    ort: "Düsseldorf",
-    angebot: "16.500 €",
-    potenzial: "14.800 €",
-    status: "Termin vereinbart",
-    tone: "success" as const,
-  },
-  {
-    id: "L-2395",
-    fahrzeug: "Audi A4 Avant",
-    baujahr: 2020,
-    km: "64.000",
-    verkaeufer: "B. Yilmaz",
-    ort: "Essen",
-    angebot: "22.900 €",
-    potenzial: "21.000 €",
-    status: "Einkaufspotenzial hoch",
-    tone: "brand" as const,
-  },
-  {
-    id: "L-2390",
-    fahrzeug: "Mercedes C 220d",
-    baujahr: 2018,
-    km: "145.000",
-    verkaeufer: "F. Becker",
-    ort: "Dortmund",
-    angebot: "18.700 €",
-    potenzial: "—",
-    status: "Abgelehnt",
-    tone: "danger" as const,
-  },
-  {
-    id: "L-2388",
-    fahrzeug: "Skoda Octavia Combi",
-    baujahr: 2019,
-    km: "98.500",
-    verkaeufer: "L. Hofmann",
-    ort: "Bonn",
-    angebot: "12.200 €",
-    potenzial: "11.300 €",
-    status: "Antwort offen",
-    tone: "warning" as const,
-  },
-];
+export default async function LeadsPage() {
+  const supabase = await createClient();
 
-export default function LeadsPage() {
+  const [leadsResult, campaignsResult] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase.from("campaigns").select("id, name").order("name"),
+  ]);
+
+  const leads = (leadsResult.data ?? []) as Lead[];
+  const campaigns = campaignsResult.data ?? [];
+
   return (
     <>
       <Topbar
         title="Leads"
-        subtitle="Alle Fahrzeug-Anfragen Ihres Autohauses"
-        action={<LinkButton href="/kampagnen">Neue Kampagne</LinkButton>}
+        subtitle={`${leads.length} ${leads.length === 1 ? "Lead" : "Leads"} insgesamt`}
+        action={<NewLeadButton campaigns={campaigns} />}
       />
 
       <div className="p-6 lg:p-8 space-y-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            placeholder="Suchen nach Fahrzeug, Verkäufer, Ort …"
-            className="h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm w-full sm:w-80"
-          />
-          <FilterChip label="Alle" active />
-          <FilterChip label="Antwort offen" />
-          <FilterChip label="Hohes Potenzial" />
-          <FilterChip label="Termin" />
-          <FilterChip label="Abgelehnt" />
-        </div>
-
-        <Card>
-          <CardBody className="!p-0 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-ink-50 text-left text-xs uppercase tracking-wider text-ink-500">
-                <tr>
-                  <Th>Lead</Th>
-                  <Th>Fahrzeug</Th>
-                  <Th>Verkäufer</Th>
-                  <Th>Angebot</Th>
-                  <Th>Einkaufspotenzial</Th>
-                  <Th>Status</Th>
-                  <Th></Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink-100">
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-ink-50/60">
-                    <Td>
-                      <span className="font-mono text-xs text-ink-500">
-                        {lead.id}
-                      </span>
-                    </Td>
-                    <Td>
-                      <div className="font-medium text-ink-900">
-                        {lead.fahrzeug}
-                      </div>
-                      <div className="text-xs text-ink-500">
-                        {lead.baujahr} · {lead.km} km
-                      </div>
-                    </Td>
-                    <Td>
-                      <div className="text-ink-900">{lead.verkaeufer}</div>
-                      <div className="text-xs text-ink-500">{lead.ort}</div>
-                    </Td>
-                    <Td className="text-ink-900">{lead.angebot}</Td>
-                    <Td className="font-semibold text-brand-800">
-                      {lead.potenzial}
-                    </Td>
-                    <Td>
-                      <Badge tone={lead.tone}>{lead.status}</Badge>
-                    </Td>
-                    <Td className="text-right">
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="text-sm font-medium text-brand-700 hover:underline"
-                      >
-                        Öffnen →
-                      </Link>
-                    </Td>
+        {leads.length === 0 ? (
+          <Card>
+            <CardBody className="py-16 text-center space-y-4">
+              <div className="mx-auto h-12 w-12 rounded-full bg-brand-50 text-brand-700 grid place-items-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-6 w-6"
+                  aria-hidden
+                >
+                  <path
+                    d="M4 6h16M4 12h16M4 18h10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-ink-900">
+                  Noch keine Leads
+                </h2>
+                <p className="mt-1 text-sm text-ink-500 max-w-md mx-auto">
+                  Legen Sie Ihren ersten Lead an oder laden Sie Beispieldaten,
+                  um die App auszuprobieren.
+                </p>
+              </div>
+              <div className="flex justify-center gap-2">
+                <NewLeadButton campaigns={campaigns} />
+                <SeedButton />
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <Card>
+            <CardBody className="!p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-ink-50 text-left text-xs uppercase tracking-wider text-ink-500">
+                  <tr>
+                    <Th>Fahrzeug</Th>
+                    <Th>Verkäufer</Th>
+                    <Th>Angebot</Th>
+                    <Th>Ankaufspreis</Th>
+                    <Th>Status</Th>
+                    <Th></Th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardBody>
-        </Card>
+                </thead>
+                <tbody className="divide-y divide-ink-100">
+                  {leads.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-ink-50/60">
+                      <Td>
+                        <div className="font-medium text-ink-900">
+                          {lead.fahrzeug}
+                        </div>
+                        <div className="text-xs text-ink-500">
+                          {lead.baujahr ?? "—"} · {formatKm(lead.kilometerstand)}
+                        </div>
+                      </Td>
+                      <Td>
+                        <div className="text-ink-900">
+                          {lead.verkaeufer_name ?? "—"}
+                        </div>
+                        <div className="text-xs text-ink-500">
+                          {lead.ort ?? ""}
+                        </div>
+                      </Td>
+                      <Td className="text-ink-900">
+                        {formatEuro(lead.angebot_preis)}
+                      </Td>
+                      <Td className="font-semibold text-brand-800">
+                        {formatEuro(lead.ankaufspreis)}
+                      </Td>
+                      <Td>
+                        <Badge tone={LEAD_STATUS_TONE[lead.status]}>
+                          {LEAD_STATUS_LABEL[lead.status]}
+                        </Badge>
+                      </Td>
+                      <Td className="text-right">
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="text-sm font-medium text-brand-700 hover:underline"
+                        >
+                          Öffnen →
+                        </Link>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </>
   );
@@ -167,20 +149,4 @@ function Td({
   className?: string;
 }) {
   return <td className={`px-4 py-3 ${className}`}>{children}</td>;
-}
-
-function FilterChip({ label, active }: { label: string; active?: boolean }) {
-  return (
-    <button
-      type="button"
-      className={[
-        "h-10 px-3 rounded-lg text-sm font-medium border transition-colors",
-        active
-          ? "bg-brand-50 border-brand-200 text-brand-800"
-          : "bg-white border-ink-200 text-ink-700 hover:bg-ink-50",
-      ].join(" ")}
-    >
-      {label}
-    </button>
-  );
 }

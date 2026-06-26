@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { logout } from "../auth-actions";
 import { createClient } from "@/lib/supabase/server";
+import { ProfileForm } from "./profile-form";
+import type { Profile } from "@/lib/database.types";
 
 export const metadata: Metadata = {
   title: "Einstellungen",
@@ -14,7 +16,12 @@ export default async function EinstellungenPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const email = user?.email ?? "";
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user!.id)
+    .single();
 
   return (
     <>
@@ -28,16 +35,8 @@ export default async function EinstellungenPage() {
           <CardHeader>
             <CardTitle>Autohaus</CardTitle>
           </CardHeader>
-          <CardBody className="space-y-4">
-            <Input label="Firmenname" value="Autohaus Musterstadt GmbH" />
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Input label="Telefon" value="+49 221 0000000" />
-              <Input label="E-Mail" value="kontakt@autohaus-musterstadt.de" />
-            </div>
-            <Input label="Adresse" value="Musterstraße 1, 50667 Köln" />
-            <div className="pt-2">
-              <Button>Speichern</Button>
-            </div>
+          <CardBody>
+            <ProfileForm profile={profile as Profile} />
           </CardBody>
         </Card>
 
@@ -49,6 +48,9 @@ export default async function EinstellungenPage() {
             <Toggle label="E-Mail bei neuer Verkäufer-Antwort" enabled />
             <Toggle label="Push-Benachrichtigung bei hohem Potenzial" enabled />
             <Toggle label="Tagesbericht per E-Mail (18:00 Uhr)" />
+            <p className="text-xs text-ink-500 pt-2">
+              (Benachrichtigungs-Einstellungen werden noch nicht gespeichert.)
+            </p>
           </CardBody>
         </Card>
 
@@ -59,7 +61,7 @@ export default async function EinstellungenPage() {
           <CardBody className="text-sm space-y-3">
             <div className="text-ink-600">
               Angemeldet als{" "}
-              <span className="font-medium text-ink-900">{email}</span>
+              <span className="font-medium text-ink-900">{user?.email}</span>
             </div>
             <p className="text-ink-500">
               Passwort ändern und Zwei-Faktor-Authentifizierung folgen.
@@ -78,20 +80,6 @@ export default async function EinstellungenPage() {
         </Card>
       </div>
     </>
-  );
-}
-
-function Input({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-ink-700 mb-1.5">
-        {label}
-      </label>
-      <input
-        defaultValue={value}
-        className="w-full h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm text-ink-900 focus:border-brand-500 focus:outline-none"
-      />
-    </div>
   );
 }
 

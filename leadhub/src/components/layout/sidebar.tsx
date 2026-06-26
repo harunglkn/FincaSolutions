@@ -69,6 +69,15 @@ export async function Sidebar() {
   } = await supabase.auth.getUser();
   const email = user?.email;
 
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("firma")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const firma = profile?.firma ?? null;
+
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
       <div className="h-16 px-5 flex items-center border-b border-ink-100">
@@ -96,9 +105,11 @@ export async function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-ink-900 truncate">
-              {email ?? "Gast"}
+              {firma ?? email ?? "Gast"}
             </p>
-            <p className="text-xs text-ink-500 truncate">Finca-Solutions</p>
+            <p className="text-xs text-ink-500 truncate">
+              {firma ? email : "Finca-Solutions"}
+            </p>
           </div>
         </div>
       </div>

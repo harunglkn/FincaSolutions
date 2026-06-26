@@ -4,43 +4,82 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/server";
+import {
+  LEAD_STATUS_LABEL,
+  LEAD_STATUS_TONE,
+  type Lead,
+} from "@/lib/database.types";
+import { formatEuro } from "@/lib/format";
+import { SeedButton } from "../seed-button";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-const recentLeads = [
-  {
-    id: "L-2401",
-    fahrzeug: "BMW 320d Touring · 2019 · 89.000 km",
-    quelle: "Suchlauf · Premium-Kombis",
-    status: "Antwort offen",
-    tone: "warning" as const,
-  },
-  {
-    id: "L-2398",
-    fahrzeug: "VW Golf 7 GTI · 2017 · 112.000 km",
-    quelle: "Direkte Anfrage",
-    status: "Termin vereinbart",
-    tone: "success" as const,
-  },
-  {
-    id: "L-2395",
-    fahrzeug: "Audi A4 Avant · 2020 · 64.000 km",
-    quelle: "Suchlauf · Audi-Diesel",
-    status: "Einkaufspotenzial hoch",
-    tone: "brand" as const,
-  },
-  {
-    id: "L-2390",
-    fahrzeug: "Mercedes C 220d · 2018 · 145.000 km",
-    quelle: "Suchlauf · Mercedes-Sterne",
-    status: "Abgelehnt",
-    tone: "danger" as const,
-  },
-];
+function startOfToday(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const todayIso = startOfToday();
+
+  const [
+    leadsTodayResult,
+    openResult,
+    campaignsActiveResult,
+    recentLeadsResult,
+    allLeadsResult,
+  ] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("ankaufspreis", { count: "exact" })
+      .gte("created_at", todayIso),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "antwort_offen"),
+    supabase
+      .from("campaigns")
+      .select("id", { count: "exact", head: true })
+      .eq("aktiv", true),
+    supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("leads").select("status, ankaufspreis"),
+  ]);
+
+  const anfragenHeute = leadsTodayResult.count ?? 0;
+  const offeneAntworten = openResult.count ?? 0;
+  const kampagnenAktiv = campaignsActiveResult.count ?? 0;
+  const recentLeads = (recentLeadsResult.data ?? []) as Lead[];
+  const allLeads = allLeadsResult.data ?? [];
+
+  // Einkaufspotenzial: Summe der ankaufspreise aller noch offenen Leads
+  const einkaufspotenzial = allLeads
+    .filter((l) =>
+      ["antwort_offen", "termin_vereinbart", "hohes_potenzial"].includes(
+        l.status,
+      ),
+    )
+    .reduce((sum, l) => sum + (Number(l.ankaufspreis) || 0), 0);
+
+  // Tagesbericht-Zahlen
+  const tagesbericht = {
+    anfragen: anfragenHeute,
+    offen: offeneAntworten,
+    termine: allLeads.filter((l) => l.status === "termin_vereinbart").length,
+    potenzial: allLeads.filter((l) => l.status === "hohes_potenzial").length,
+    abgeschlossen: allLeads.filter((l) => l.status === "abgeschlossen").length,
+  };
+
+  const isEmpty = allLeads.length === 0 && kampagnenAktiv === 0;
+
   return (
     <>
       <Topbar
@@ -50,29 +89,36 @@ export default function DashboardPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-6">
+        {isEmpty && (
+          <Card>
+            <CardBody className="py-10 text-center space-y-3">
+              <h2 className="text-lg font-semibold text-ink-900">
+                Willkommen im LeadHub 👋
+              </h2>
+              <p className="text-sm text-ink-500 max-w-md mx-auto">
+                Damit du gleich etwas zu sehen hast, kannst du Beispieldaten
+                laden — oder direkt deinen ersten Lead anlegen.
+              </p>
+              <div className="flex justify-center gap-2 pt-2">
+                <SeedButton />
+                <LinkButton href="/leads">Zur Lead-Liste</LinkButton>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard
-            label="Neue Anfragen heute"
-            value={28}
-            trend={{ value: "+18 %", direction: "up" }}
-            hint="vs. Vortag"
-          />
-          <StatCard
-            label="Offene Antworten"
-            value={11}
-            trend={{ value: "−3", direction: "down" }}
-            hint="vs. Vortag"
-          />
+          <StatCard label="Neue Anfragen heute" value={anfragenHeute} />
+          <StatCard label="Offene Antworten" value={offeneAntworten} />
           <StatCard
             label="Einkaufspotenzial"
-            value="62.400 €"
-            trend={{ value: "+9 %", direction: "up" }}
-            hint="diese Woche"
+            value={formatEuro(einkaufspotenzial)}
+            hint="offene Leads"
           />
           <StatCard
-            label="Termine geplant"
-            value={6}
-            hint="für heute"
+            label="Aktive Kampagnen"
+            value={kampagnenAktiv}
+            hint="Suchlaeufe"
           />
         </section>
 
@@ -85,34 +131,40 @@ export default function DashboardPage() {
               </LinkButton>
             </CardHeader>
             <CardBody className="!p-0">
-              <ul className="divide-y divide-ink-100">
-                {recentLeads.map((lead) => (
-                  <li
-                    key={lead.id}
-                    className="px-6 py-4 flex items-start justify-between gap-4 hover:bg-ink-50/60"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-ink-500">
-                          {lead.id}
-                        </span>
-                        <Badge tone={lead.tone}>{lead.status}</Badge>
-                      </div>
-                      <p className="mt-1 text-sm font-medium text-ink-900 truncate">
-                        {lead.fahrzeug}
-                      </p>
-                      <p className="text-xs text-ink-500">{lead.quelle}</p>
-                    </div>
-                    <LinkButton
-                      href={`/leads/${lead.id}`}
-                      variant="secondary"
-                      size="sm"
+              {recentLeads.length === 0 ? (
+                <p className="px-6 py-8 text-sm text-ink-500 text-center">
+                  Noch keine Leads.
+                </p>
+              ) : (
+                <ul className="divide-y divide-ink-100">
+                  {recentLeads.map((lead) => (
+                    <li
+                      key={lead.id}
+                      className="px-6 py-4 flex items-start justify-between gap-4 hover:bg-ink-50/60"
                     >
-                      Öffnen
-                    </LinkButton>
-                  </li>
-                ))}
-              </ul>
+                      <div className="min-w-0">
+                        <Badge tone={LEAD_STATUS_TONE[lead.status]}>
+                          {LEAD_STATUS_LABEL[lead.status]}
+                        </Badge>
+                        <p className="mt-1 text-sm font-medium text-ink-900 truncate">
+                          {lead.fahrzeug}
+                        </p>
+                        <p className="text-xs text-ink-500">
+                          {lead.verkaeufer_name ?? "—"} ·{" "}
+                          {lead.ort ?? ""}
+                        </p>
+                      </div>
+                      <LinkButton
+                        href={`/leads/${lead.id}`}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        Öffnen
+                      </LinkButton>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardBody>
           </Card>
 
@@ -121,12 +173,12 @@ export default function DashboardPage() {
               <CardTitle>Tagesbericht</CardTitle>
             </CardHeader>
             <CardBody className="space-y-3 text-sm">
-              <Row label="Suchläufe aktiv" value="4" />
-              <Row label="Anfragen versendet" value="28" />
-              <Row label="Antworten erhalten" value="17" />
-              <Row label="Davon mit Potenzial" value="9" />
-              <Row label="Termine vereinbart" value="6" />
-              <Row label="Ankäufe abgeschlossen" value="2" emphasis />
+              <Row label="Aktive Kampagnen" value={kampagnenAktiv} />
+              <Row label="Anfragen heute" value={tagesbericht.anfragen} />
+              <Row label="Offene Antworten" value={tagesbericht.offen} />
+              <Row label="Mit Potenzial" value={tagesbericht.potenzial} />
+              <Row label="Termine vereinbart" value={tagesbericht.termine} />
+              <Row label="Abgeschlossen" value={tagesbericht.abgeschlossen} emphasis />
             </CardBody>
           </Card>
         </section>
@@ -141,7 +193,7 @@ function Row({
   emphasis,
 }: {
   label: string;
-  value: string;
+  value: number;
   emphasis?: boolean;
 }) {
   return (

@@ -1,24 +1,65 @@
+import { notFound } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { Button, LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/server";
+import {
+  LEAD_STATUS_LABEL,
+  LEAD_STATUS_TONE,
+  type Lead,
+  type LeadMessage,
+} from "@/lib/database.types";
+import { formatEuro, formatKm, formatRelative } from "@/lib/format";
+import { sendMessage } from "../actions";
+import { StatusSelector } from "./status-selector";
 
 export default async function LeadDetailPage(
   props: PageProps<"/leads/[id]">,
 ) {
   const { id } = await props.params;
+  const supabase = await createClient();
+
+  const [leadResult, messagesResult, campaignResult] = await Promise.all([
+    supabase.from("leads").select("*").eq("id", id).maybeSingle(),
+    supabase
+      .from("lead_messages")
+      .select("*")
+      .eq("lead_id", id)
+      .order("created_at", { ascending: true }),
+    Promise.resolve(null),
+  ]);
+
+  const lead = leadResult.data as Lead | null;
+  if (!lead) notFound();
+  const messages = (messagesResult.data ?? []) as LeadMessage[];
+
+  let campaignName: string | null = null;
+  if (lead.campaign_id) {
+    const { data } = await supabase
+      .from("campaigns")
+      .select("name")
+      .eq("id", lead.campaign_id)
+      .maybeSingle();
+    campaignName = data?.name ?? null;
+  }
+
+  const marge =
+    lead.marktwert !== null && lead.ankaufspreis !== null
+      ? lead.marktwert - lead.ankaufspreis
+      : null;
 
   return (
     <>
       <Topbar
-        title={`Lead ${id}`}
+        title={lead.fahrzeug}
         subtitle="Details, Antworten, Ankaufspreis und Termin"
         action={
           <>
             <LinkButton href="/leads" variant="ghost" size="sm">
               ← Zur Liste
             </LinkButton>
-            <Button size="sm">Termin anlegen</Button>
+            <StatusSelector leadId={lead.id} status={lead.status} />
           </>
         }
       />
@@ -28,45 +69,58 @@ export default async function LeadDetailPage(
           <Card>
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Fahrzeug</CardTitle>
-              <Badge tone="warning">Antwort offen</Badge>
+              <Badge tone={LEAD_STATUS_TONE[lead.status]}>
+                {LEAD_STATUS_LABEL[lead.status]}
+              </Badge>
             </CardHeader>
             <CardBody className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-              <Field label="Modell" value="BMW 320d Touring" />
-              <Field label="Baujahr" value="2019" />
-              <Field label="Kilometerstand" value="89.000 km" />
-              <Field label="Getriebe" value="Automatik" />
-              <Field label="Kraftstoff" value="Diesel" />
-              <Field label="Erstzulassung" value="04/2019" />
-              <Field label="HU bis" value="03/2026" />
-              <Field label="Farbe" value="Mineralweiß" />
-              <Field label="Standort" value="Köln" />
+              <Field label="Modell" value={lead.fahrzeug} />
+              <Field label="Baujahr" value={lead.baujahr?.toString() ?? "—"} />
+              <Field
+                label="Kilometerstand"
+                value={formatKm(lead.kilometerstand)}
+              />
+              <Field label="Getriebe" value={lead.getriebe ?? "—"} />
+              <Field label="Kraftstoff" value={lead.kraftstoff ?? "—"} />
+              <Field label="Erstzulassung" value={lead.erstzulassung ?? "—"} />
+              <Field label="HU bis" value={lead.hu_bis ?? "—"} />
+              <Field label="Farbe" value={lead.farbe ?? "—"} />
+              <Field label="Standort" value={lead.ort ?? "—"} />
             </CardBody>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Antworten des Verkäufers</CardTitle>
+              <CardTitle>
+                Antworten des Verkäufers ({messages.length})
+              </CardTitle>
             </CardHeader>
             <CardBody className="space-y-4">
-              <Message
-                from="Verkäufer · Marco S."
-                time="vor 2 Std."
-                text="Hallo, das Fahrzeug ist scheckheftgepflegt, Vorbesitzer 2. Anfrage gerne per Telefon."
-              />
-              <Message
-                from="Sie"
-                time="vor 1 Std."
-                text="Vielen Dank. Wir würden 13.200 € anbieten — passt das?"
-                mine
-              />
-              <Message
-                from="Verkäufer · Marco S."
-                time="vor 20 Min."
-                text="13.200 € ist zu wenig. Vorstellung: 14.500 €."
-              />
-              <form className="pt-2 flex gap-2">
+              {messages.length === 0 ? (
+                <p className="text-sm text-ink-500 text-center py-6">
+                  Noch keine Nachrichten zu diesem Lead.
+                </p>
+              ) : (
+                messages.map((m) => (
+                  <Message
+                    key={m.id}
+                    from={
+                      m.von === "haendler"
+                        ? "Sie"
+                        : `Verkäufer · ${lead.verkaeufer_name ?? ""}`.trim()
+                    }
+                    time={formatRelative(m.created_at)}
+                    text={m.text}
+                    mine={m.von === "haendler"}
+                  />
+                ))
+              )}
+              <form action={sendMessage} className="pt-2 flex gap-2">
+                <input type="hidden" name="lead_id" value={lead.id} />
                 <input
                   type="text"
+                  name="text"
+                  required
                   placeholder="Nachricht schreiben …"
                   className="flex-1 h-11 px-3 rounded-lg border border-ink-200 bg-white text-sm"
                 />
@@ -82,22 +136,16 @@ export default async function LeadDetailPage(
               <CardTitle>Einkaufspotenzial</CardTitle>
             </CardHeader>
             <CardBody className="space-y-3 text-sm">
-              <Field label="Verkäuferpreis" value="14.900 €" />
-              <Field label="Marktwert (Schätzung)" value="15.400 €" />
-              <Field label="Ihr Ankaufspreis" value="13.200 €" highlight />
-              <Field label="Erwartete Marge" value="2.200 €" />
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Termin</CardTitle>
-            </CardHeader>
-            <CardBody className="text-sm">
-              <p className="text-ink-600">
-                Noch kein Termin vereinbart.
-              </p>
-              <Button className="mt-3 w-full">Termin anlegen</Button>
+              <Field label="Verkäuferpreis" value={formatEuro(lead.angebot_preis)} />
+              <Field label="Marktwert" value={formatEuro(lead.marktwert)} />
+              <Field
+                label="Ihr Ankaufspreis"
+                value={formatEuro(lead.ankaufspreis)}
+                highlight
+              />
+              {marge !== null && (
+                <Field label="Erwartete Marge" value={formatEuro(marge)} />
+              )}
             </CardBody>
           </Card>
 
@@ -106,9 +154,9 @@ export default async function LeadDetailPage(
               <CardTitle>Quelle</CardTitle>
             </CardHeader>
             <CardBody className="text-sm space-y-2">
-              <Field label="Kampagne" value="Premium-Kombis" />
-              <Field label="Suchlauf gestartet" value="Heute 08:14" />
-              <Field label="Anfrage versendet" value="Heute 09:02" />
+              <Field label="Kampagne" value={campaignName ?? "—"} />
+              <Field label="Eingegangen" value={formatRelative(lead.created_at)} />
+              <Field label="Quelle" value={lead.quelle ?? "—"} />
             </CardBody>
           </Card>
         </div>
@@ -156,15 +204,11 @@ function Message({
       <div
         className={[
           "max-w-md rounded-xl px-4 py-3 text-sm",
-          mine
-            ? "bg-brand-700 text-white"
-            : "bg-ink-100 text-ink-900",
+          mine ? "bg-brand-700 text-white" : "bg-ink-100 text-ink-900",
         ].join(" ")}
       >
         <div
-          className={`text-xs mb-1 ${
-            mine ? "text-brand-100" : "text-ink-500"
-          }`}
+          className={`text-xs mb-1 ${mine ? "text-brand-100" : "text-ink-500"}`}
         >
           {from} · {time}
         </div>
