@@ -47,6 +47,9 @@ export async function createLead(
   const campaign_id =
     campaign_id_raw && campaign_id_raw !== "none" ? campaign_id_raw : null;
 
+  const str = (k: string) =>
+    String(formData.get(k) ?? "").trim() || null;
+
   const { data, error } = await supabase
     .from("leads")
     .insert({
@@ -54,18 +57,33 @@ export async function createLead(
       fahrzeug,
       baujahr: parseInt0(formData.get("baujahr")),
       kilometerstand: parseInt0(formData.get("kilometerstand")),
-      verkaeufer_name: String(formData.get("verkaeufer_name") ?? "").trim() || null,
-      ort: String(formData.get("ort") ?? "").trim() || null,
+      getriebe: str("getriebe"),
+      kraftstoff: str("kraftstoff"),
+      erstzulassung: str("erstzulassung"),
+      hu_bis: str("hu_bis"),
+      farbe: str("farbe"),
+      verkaeufer_name: str("verkaeufer_name"),
+      ort: str("ort"),
       angebot_preis: parseNum(formData.get("angebot_preis")),
       ankaufspreis: parseNum(formData.get("ankaufspreis")),
       status: parseStatus(formData.get("status")),
       quelle: String(formData.get("quelle") ?? "Direkte Anfrage").trim(),
       campaign_id,
+      external_id: str("external_id"),
+      inserat_url: str("inserat_url"),
     })
     .select("id")
     .single();
 
-  if (error) return { error: "Speichern fehlgeschlagen: " + error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return {
+        error:
+          "Dieses Inserat (Inserat-ID) ist bereits in Ihren Leads gespeichert.",
+      };
+    }
+    return { error: "Speichern fehlgeschlagen: " + error.message };
+  }
 
   revalidatePath("/leads");
   revalidatePath("/dashboard");

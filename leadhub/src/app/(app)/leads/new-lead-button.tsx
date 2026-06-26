@@ -30,7 +30,7 @@ export function NewLeadButton({ campaigns }: { campaigns: Campaign[] }) {
       <dialog
         ref={dialogRef}
         onClose={() => setOpen(false)}
-        className="rounded-xl p-0 backdrop:bg-ink-900/50 backdrop:backdrop-blur-sm w-full max-w-lg"
+        className="rounded-xl p-0 backdrop:bg-ink-900/50 backdrop:backdrop-blur-sm w-full max-w-2xl"
       >
         <form action={formAction} className="bg-white">
           <div className="px-6 py-4 border-b border-ink-100 flex items-center justify-between">
@@ -45,60 +45,124 @@ export function NewLeadButton({ campaigns }: { campaigns: Campaign[] }) {
             </button>
           </div>
 
-          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-            <Field label="Fahrzeug *" name="fahrzeug" placeholder="z. B. BMW 320d Touring" required />
+          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            <Section title="Fahrzeug">
+              <Field
+                label="Fahrzeug *"
+                name="fahrzeug"
+                placeholder="z. B. BMW 320d Touring"
+                required
+                colspan={2}
+              />
+              <Field
+                label="Baujahr"
+                name="baujahr"
+                type="number"
+                placeholder="2020"
+              />
+              <Field
+                label="Kilometer"
+                name="kilometerstand"
+                type="number"
+                placeholder="89000"
+              />
+              <Field
+                label="Getriebe"
+                name="getriebe"
+                placeholder="Automatik / Schaltgetriebe"
+              />
+              <Field
+                label="Kraftstoff"
+                name="kraftstoff"
+                placeholder="Diesel / Benzin / Hybrid"
+              />
+              <Field
+                label="Erstzulassung"
+                name="erstzulassung"
+                placeholder="04/2019"
+              />
+              <Field label="HU bis" name="hu_bis" placeholder="03/2026" />
+              <Field label="Farbe" name="farbe" placeholder="Mineralweiss" />
+            </Section>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Baujahr" name="baujahr" type="number" placeholder="2020" />
-              <Field label="Kilometer" name="kilometerstand" type="number" placeholder="89000" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Verkäufer" name="verkaeufer_name" placeholder="Vorname N." />
+            <Section title="Verkäufer">
+              <Field
+                label="Name"
+                name="verkaeufer_name"
+                placeholder="Vorname N."
+              />
               <Field label="Ort" name="ort" placeholder="Köln" />
-            </div>
+            </Section>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Verkäuferpreis (€)" name="angebot_preis" type="number" placeholder="14900" />
-              <Field label="Ankaufspreis (€)" name="ankaufspreis" type="number" placeholder="13200" />
-            </div>
+            <Section title="Preise">
+              <Field
+                label="Verkäuferpreis (€)"
+                name="angebot_preis"
+                type="number"
+                placeholder="14900"
+              />
+              <Field
+                label="Ankaufspreis (€)"
+                name="ankaufspreis"
+                type="number"
+                placeholder="13200"
+              />
+            </Section>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1.5">
-                Status
-              </label>
-              <select
-                name="status"
-                defaultValue="antwort_offen"
-                className="w-full h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm"
-              >
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {LEAD_STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Section title="Inserat & Quelle">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-ink-700 mb-1.5">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  defaultValue="antwort_offen"
+                  className="w-full h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm"
+                >
+                  {LEAD_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {LEAD_STATUS_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1.5">
-                Kampagne
-              </label>
-              <select
-                name="campaign_id"
-                defaultValue="none"
-                className="w-full h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm"
-              >
-                <option value="none">— keine —</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-ink-700 mb-1.5">
+                  Kampagne
+                </label>
+                <select
+                  name="campaign_id"
+                  defaultValue="none"
+                  className="w-full h-10 px-3 rounded-lg border border-ink-200 bg-white text-sm"
+                >
+                  <option value="none">— keine —</option>
+                  {campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <Field label="Quelle" name="quelle" defaultValue="Direkte Anfrage" />
+              <Field
+                label="Quelle"
+                name="quelle"
+                defaultValue="Direkte Anfrage"
+              />
+              <Field
+                label="Inserat-ID"
+                name="external_id"
+                placeholder="mobile.de Inserat-Nr."
+              />
+              <Field
+                label="Inserat-Link (URL)"
+                name="inserat_url"
+                type="url"
+                placeholder="https://www.mobile.de/..."
+                colspan={2}
+              />
+            </Section>
 
             {state.error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -123,6 +187,23 @@ export function NewLeadButton({ campaigns }: { campaigns: Campaign[] }) {
   );
 }
 
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="text-xs uppercase tracking-widest font-semibold text-ink-500 mb-3">
+        {title}
+      </h3>
+      <div className="grid grid-cols-2 gap-4">{children}</div>
+    </section>
+  );
+}
+
 function Field({
   label,
   name,
@@ -130,6 +211,7 @@ function Field({
   placeholder,
   required,
   defaultValue,
+  colspan,
 }: {
   label: string;
   name: string;
@@ -137,10 +219,14 @@ function Field({
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  colspan?: 2;
 }) {
   return (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-ink-700 mb-1.5">
+    <div className={colspan === 2 ? "col-span-2" : undefined}>
+      <label
+        htmlFor={name}
+        className="block text-sm font-medium text-ink-700 mb-1.5"
+      >
         {label}
       </label>
       <input

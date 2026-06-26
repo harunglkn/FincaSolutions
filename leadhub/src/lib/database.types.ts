@@ -56,6 +56,10 @@ export type Lead = {
   status: LeadStatus;
   quelle: string | null;
 
+  // Bot-Felder (befuellt der Bot spaeter, manuelle Eingabe optional)
+  external_id: string | null;
+  inserat_url: string | null;
+
   created_at: string;
   updated_at: string;
 };

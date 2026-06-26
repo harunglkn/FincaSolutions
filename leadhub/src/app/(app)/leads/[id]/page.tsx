@@ -157,6 +157,20 @@ export default async function LeadDetailPage(
               <Field label="Kampagne" value={campaignName ?? "—"} />
               <Field label="Eingegangen" value={formatRelative(lead.created_at)} />
               <Field label="Quelle" value={lead.quelle ?? "—"} />
+              <Field label="Inserat-ID" value={lead.external_id ?? "—"} />
+              {lead.inserat_url && (
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5">
+                  <span className="text-ink-500">Inserat</span>
+                  <a
+                    href={lead.inserat_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-700 hover:underline truncate max-w-[60%]"
+                  >
+                    Original öffnen ↗
+                  </a>
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>
