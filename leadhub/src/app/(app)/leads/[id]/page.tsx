@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
-import { Button, LinkButton } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +13,7 @@ import {
 import { formatEuro, formatKm, formatRelative } from "@/lib/format";
 import { sendMessage } from "../actions";
 import { StatusSelector } from "./status-selector";
+import { MessagesLive } from "./messages-live";
 
 export default async function LeadDetailPage(
   props: PageProps<"/leads/[id]">,
@@ -91,43 +92,15 @@ export default async function LeadDetailPage(
 
           <Card>
             <CardHeader>
-              <CardTitle>
-                Antworten des Verkäufers ({messages.length})
-              </CardTitle>
+              <CardTitle>Konversation</CardTitle>
             </CardHeader>
             <CardBody className="space-y-4">
-              {messages.length === 0 ? (
-                <p className="text-sm text-ink-500 text-center py-6">
-                  Noch keine Nachrichten zu diesem Lead.
-                </p>
-              ) : (
-                messages.map((m) => (
-                  <Message
-                    key={m.id}
-                    from={
-                      m.von === "haendler"
-                        ? "Sie"
-                        : `Verkäufer · ${lead.verkaeufer_name ?? ""}`.trim()
-                    }
-                    time={formatRelative(m.created_at)}
-                    text={m.text}
-                    mine={m.von === "haendler"}
-                    status={m.delivery_status}
-                    failureReason={m.failure_reason}
-                  />
-                ))
-              )}
-              <form action={sendMessage} className="pt-2 flex gap-2">
-                <input type="hidden" name="lead_id" value={lead.id} />
-                <input
-                  type="text"
-                  name="text"
-                  required
-                  placeholder="Nachricht schreiben …"
-                  className="flex-1 h-11 px-3 rounded-lg border border-ink-200 bg-white text-sm"
-                />
-                <Button type="submit">Senden</Button>
-              </form>
+              <MessagesLive
+                leadId={lead.id}
+                verkaeuferName={lead.verkaeufer_name}
+                initialMessages={messages}
+                sendMessageAction={sendMessage}
+              />
             </CardBody>
           </Card>
         </div>
@@ -298,84 +271,3 @@ function Field({
   );
 }
 
-function Message({
-  from,
-  time,
-  text,
-  mine,
-  status,
-  failureReason,
-}: {
-  from: string;
-  time: string;
-  text: string;
-  mine?: boolean;
-  status?: string | null;
-  failureReason?: string | null;
-}) {
-  const isPending = status === "pending";
-  const isFailed = status === "failed";
-
-  const bubbleBg = mine
-    ? isFailed
-      ? "bg-red-100 text-red-900 border border-red-200"
-      : isPending
-        ? "bg-brand-100 text-brand-900 border border-brand-200"
-        : "bg-brand-700 text-white"
-    : "bg-ink-100 text-ink-900";
-
-  return (
-    <div className={mine ? "flex justify-end" : "flex"}>
-      <div
-        className={[
-          "max-w-md rounded-xl px-4 py-3 text-sm whitespace-pre-wrap",
-          bubbleBg,
-        ].join(" ")}
-      >
-        <div
-          className={`text-xs mb-1 flex items-center gap-1.5 ${
-            mine && !isPending && !isFailed
-              ? "text-brand-100"
-              : mine && isPending
-                ? "text-brand-700"
-                : mine && isFailed
-                  ? "text-red-700"
-                  : "text-ink-500"
-          }`}
-        >
-          <span>{from} · {time}</span>
-          {mine && isPending && (
-            <span className="inline-flex items-center gap-1">
-              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 animate-pulse" aria-hidden>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              wartet auf Bot
-            </span>
-          )}
-          {mine && status === "sent" && (
-            <span className="inline-flex items-center" title="Erfolgreich gesendet">
-              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
-                <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          )}
-          {mine && isFailed && (
-            <span className="inline-flex items-center gap-1" title={failureReason ?? ""}>
-              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
-                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-              fehlgeschlagen
-            </span>
-          )}
-        </div>
-        {text}
-        {isFailed && failureReason && (
-          <div className="mt-2 pt-2 border-t border-red-200 text-xs text-red-700">
-            Grund: {failureReason}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
