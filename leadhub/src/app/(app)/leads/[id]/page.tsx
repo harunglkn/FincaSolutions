@@ -173,6 +173,89 @@ export default async function LeadDetailPage(
               )}
             </CardBody>
           </Card>
+
+          {lead.bot_meta && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Bot-Auswertung</CardTitle>
+              </CardHeader>
+              <CardBody className="text-sm space-y-2">
+                {lead.bot_meta.pricing_mode && (
+                  <Field
+                    label="Preisfindung"
+                    value={lead.bot_meta.pricing_mode}
+                  />
+                )}
+                {lead.bot_meta.comparison_meta?.confidence && (
+                  <Field
+                    label="Confidence"
+                    value={String(lead.bot_meta.comparison_meta.confidence)}
+                  />
+                )}
+                {lead.bot_meta.comparison_meta?.market_anchor_price != null && (
+                  <Field
+                    label="Marktanker"
+                    value={formatEuro(
+                      Number(lead.bot_meta.comparison_meta.market_anchor_price),
+                    )}
+                  />
+                )}
+                {lead.bot_meta.comparison_meta?.lowest_market_price != null && (
+                  <Field
+                    label="Günstigster Markt"
+                    value={formatEuro(
+                      Number(lead.bot_meta.comparison_meta.lowest_market_price),
+                    )}
+                  />
+                )}
+                {lead.bot_meta.comparison_meta?.private_price_count != null && (
+                  <Field
+                    label="Privatanzeigen"
+                    value={String(
+                      lead.bot_meta.comparison_meta.private_price_count,
+                    )}
+                  />
+                )}
+                {lead.bot_meta.comparison_meta?.dealer_price_count != null && (
+                  <Field
+                    label="Händleranzeigen"
+                    value={String(
+                      lead.bot_meta.comparison_meta.dealer_price_count,
+                    )}
+                  />
+                )}
+                {Array.isArray(lead.bot_meta.comparison_prices_used) &&
+                  lead.bot_meta.comparison_prices_used.length > 0 && (
+                    <div className="pt-2">
+                      <p className="text-ink-500 mb-1">Vergleichspreise</p>
+                      <div className="flex flex-wrap gap-1">
+                        {lead.bot_meta.comparison_prices_used.map((p, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded bg-ink-100 text-xs font-mono"
+                          >
+                            {formatEuro(Number(p))}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                {lead.bot_meta.comparison_url && (
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 pt-1">
+                    <span className="text-ink-500">Vergleichs-Suche</span>
+                    <a
+                      href={lead.bot_meta.comparison_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-brand-700 hover:underline truncate max-w-[60%]"
+                    >
+                      Öffnen ↗
+                    </a>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
         </div>
       </div>
     </>
@@ -217,7 +300,7 @@ function Message({
     <div className={mine ? "flex justify-end" : "flex"}>
       <div
         className={[
-          "max-w-md rounded-xl px-4 py-3 text-sm",
+          "max-w-md rounded-xl px-4 py-3 text-sm whitespace-pre-wrap",
           mine ? "bg-brand-700 text-white" : "bg-ink-100 text-ink-900",
         ].join(" ")}
       >

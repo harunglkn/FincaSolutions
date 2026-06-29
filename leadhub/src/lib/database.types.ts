@@ -59,9 +59,28 @@ export type Lead = {
   // Bot-Felder (befuellt der Bot spaeter, manuelle Eingabe optional)
   external_id: string | null;
   inserat_url: string | null;
+  bot_meta: BotMeta | null;
 
   created_at: string;
   updated_at: string;
+};
+
+export type BotMeta = {
+  pricing_mode?: string | null;
+  comparison_url?: string | null;
+  comparison_prices_used?: number[] | null;
+  comparison_meta?: {
+    confidence?: string;
+    anchor_strategy?: string;
+    private_price_count?: number;
+    dealer_price_count?: number;
+    dealer_margin_deduction_pct?: number;
+    market_anchor_price?: number;
+    lowest_market_price?: number;
+    removed_prices?: number[];
+    [key: string]: unknown;
+  } | null;
+  [key: string]: unknown;
 };
 
 export type LeadMessage = {
