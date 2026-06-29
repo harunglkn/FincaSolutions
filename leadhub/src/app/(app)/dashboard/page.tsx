@@ -10,8 +10,9 @@ import {
   LEAD_STATUS_TONE,
   type Lead,
 } from "@/lib/database.types";
-import { formatEuro } from "@/lib/format";
+import { formatEuro, formatRelative } from "@/lib/format";
 import { SeedButton } from "../seed-button";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
     campaignsActiveResult,
     recentLeadsResult,
     allLeadsResult,
+    botLeadsTodayResult,
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -52,6 +54,13 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(5),
     supabase.from("leads").select("status, ankaufspreis"),
+    supabase
+      .from("leads")
+      .select("id, fahrzeug, ankaufspreis, angebot_preis, created_at, external_id, quelle")
+      .eq("quelle", "mobile.de Bot")
+      .gte("created_at", todayIso)
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
@@ -59,6 +68,12 @@ export default async function DashboardPage() {
   const kampagnenAktiv = campaignsActiveResult.count ?? 0;
   const recentLeads = (recentLeadsResult.data ?? []) as Lead[];
   const allLeads = allLeadsResult.data ?? [];
+  const botLeadsToday = botLeadsTodayResult.data ?? [];
+
+  const botAnkaufSummeHeute = botLeadsToday.reduce(
+    (sum, l) => sum + (Number(l.ankaufspreis) || 0),
+    0,
+  );
 
   // Einkaufspotenzial: Summe der ankaufspreise aller noch offenen Leads
   const einkaufspotenzial = allLeads
@@ -121,6 +136,63 @@ export default async function DashboardPage() {
             hint="Suchlaeufe"
           />
         </section>
+
+        {botLeadsToday.length > 0 && (
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <div>
+                <CardTitle>
+                  🤖 Bot-Aktivität heute · {botLeadsToday.length} Kontakte
+                </CardTitle>
+                <p className="mt-0.5 text-xs text-ink-500">
+                  Gesamt-Einkaufspotenzial: {formatEuro(botAnkaufSummeHeute)}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                </span>
+                Live
+              </span>
+            </CardHeader>
+            <CardBody className="!p-0">
+              <ul className="divide-y divide-ink-100">
+                {botLeadsToday.map((l) => (
+                  <li
+                    key={l.id}
+                    className="px-6 py-3 flex items-center justify-between gap-4 hover:bg-ink-50/60"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 text-xs text-ink-500">
+                        <span className="font-mono">
+                          {l.external_id ?? "—"}
+                        </span>
+                        <span>·</span>
+                        <span>{formatRelative(l.created_at)}</span>
+                      </div>
+                      <p className="text-sm font-medium text-ink-900 truncate">
+                        {l.fahrzeug}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-ink-500">Angebot</div>
+                      <div className="text-sm font-semibold text-brand-800">
+                        {formatEuro(Number(l.ankaufspreis))}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/leads/${l.id}`}
+                      className="text-sm font-medium text-brand-700 hover:underline shrink-0"
+                    >
+                      Öffnen →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          </Card>
+        )}
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
