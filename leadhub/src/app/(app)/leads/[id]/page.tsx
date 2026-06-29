@@ -178,8 +178,32 @@ export default async function LeadDetailPage(
 
           {lead.bot_meta && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex items-center justify-between">
                 <CardTitle>Bot-Auswertung</CardTitle>
+                {lead.bot_meta.comparison_url && (
+                  <a
+                    href={lead.bot_meta.comparison_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 hover:text-brand-900 hover:underline"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="h-3.5 w-3.5"
+                      aria-hidden
+                    >
+                      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                      <path
+                        d="m20 20-3-3"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Vergleichs-Suche ↗
+                  </a>
+                )}
               </CardHeader>
               <CardBody className="text-sm space-y-2">
                 {lead.bot_meta.pricing_mode && (
@@ -242,19 +266,6 @@ export default async function LeadDetailPage(
                       </div>
                     </div>
                   )}
-                {lead.bot_meta.comparison_url && (
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 pt-1">
-                    <span className="text-ink-500">Vergleichs-Suche</span>
-                    <a
-                      href={lead.bot_meta.comparison_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-brand-700 hover:underline truncate max-w-[60%]"
-                    >
-                      Öffnen ↗
-                    </a>
-                  </div>
-                )}
               </CardBody>
             </Card>
           )}
