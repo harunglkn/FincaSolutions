@@ -11,6 +11,12 @@ export type LeadStatus =
 
 export type MessageSender = "verkaeufer" | "haendler";
 
+export type MessageDeliveryStatus =
+  | "received"
+  | "sent"
+  | "pending"
+  | "failed";
+
 export type Profile = {
   id: string;
   firma: string | null;
@@ -88,6 +94,11 @@ export type LeadMessage = {
   lead_id: string;
   von: MessageSender;
   text: string;
+  delivery_status: MessageDeliveryStatus | null;
+  sent_at: string | null;
+  failed_at: string | null;
+  failure_reason: string | null;
+  dedup_key: string | null;
   created_at: string;
 };
 

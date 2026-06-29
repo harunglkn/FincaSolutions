@@ -112,6 +112,8 @@ export default async function LeadDetailPage(
                     time={formatRelative(m.created_at)}
                     text={m.text}
                     mine={m.von === "haendler"}
+                    status={m.delivery_status}
+                    failureReason={m.failure_reason}
                   />
                 ))
               )}
@@ -290,26 +292,78 @@ function Message({
   time,
   text,
   mine,
+  status,
+  failureReason,
 }: {
   from: string;
   time: string;
   text: string;
   mine?: boolean;
+  status?: string | null;
+  failureReason?: string | null;
 }) {
+  const isPending = status === "pending";
+  const isFailed = status === "failed";
+
+  const bubbleBg = mine
+    ? isFailed
+      ? "bg-red-100 text-red-900 border border-red-200"
+      : isPending
+        ? "bg-brand-100 text-brand-900 border border-brand-200"
+        : "bg-brand-700 text-white"
+    : "bg-ink-100 text-ink-900";
+
   return (
     <div className={mine ? "flex justify-end" : "flex"}>
       <div
         className={[
           "max-w-md rounded-xl px-4 py-3 text-sm whitespace-pre-wrap",
-          mine ? "bg-brand-700 text-white" : "bg-ink-100 text-ink-900",
+          bubbleBg,
         ].join(" ")}
       >
         <div
-          className={`text-xs mb-1 ${mine ? "text-brand-100" : "text-ink-500"}`}
+          className={`text-xs mb-1 flex items-center gap-1.5 ${
+            mine && !isPending && !isFailed
+              ? "text-brand-100"
+              : mine && isPending
+                ? "text-brand-700"
+                : mine && isFailed
+                  ? "text-red-700"
+                  : "text-ink-500"
+          }`}
         >
-          {from} · {time}
+          <span>{from} · {time}</span>
+          {mine && isPending && (
+            <span className="inline-flex items-center gap-1">
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 animate-pulse" aria-hidden>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              wartet auf Bot
+            </span>
+          )}
+          {mine && status === "sent" && (
+            <span className="inline-flex items-center" title="Erfolgreich gesendet">
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
+                <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          )}
+          {mine && isFailed && (
+            <span className="inline-flex items-center gap-1" title={failureReason ?? ""}>
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
+                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+              fehlgeschlagen
+            </span>
+          )}
         </div>
         {text}
+        {isFailed && failureReason && (
+          <div className="mt-2 pt-2 border-t border-red-200 text-xs text-red-700">
+            Grund: {failureReason}
+          </div>
+        )}
       </div>
     </div>
   );

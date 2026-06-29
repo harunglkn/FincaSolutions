@@ -117,10 +117,13 @@ export async function sendMessage(formData: FormData) {
   if (!leadId || !text) return;
 
   const supabase = await createClient();
+  // Nachricht geht in die Sende-Queue. Der Bot pickt sie auf und sendet
+  // sie via mobile.de — danach wird sie auf 'sent' markiert.
   const { error } = await supabase.from("lead_messages").insert({
     lead_id: leadId,
     von: "haendler",
     text,
+    delivery_status: "pending",
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/leads/${leadId}`);
