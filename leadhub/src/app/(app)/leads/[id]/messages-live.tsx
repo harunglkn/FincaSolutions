@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { LeadMessage } from "@/lib/database.types";
@@ -12,6 +12,14 @@ type Props = {
   sendMessageAction: (formData: FormData) => Promise<void>;
 };
 
+const QUICK_REPLIES: string[] = [
+  "Hallo, ist das Fahrzeug noch verfügbar?",
+  "Können Sie mir noch weitere Bilder zukommen lassen?",
+  "Mein Angebot bleibt bestehen. Bei Interesse melden Sie sich gerne.",
+  "Können wir kurz telefonieren? Tel: 01702333592",
+  "Vielen Dank für Ihre Rückmeldung — ich melde mich wieder.",
+];
+
 export function MessagesLive({
   leadId,
   verkaeuferName,
@@ -19,8 +27,11 @@ export function MessagesLive({
   sendMessageAction,
 }: Props) {
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
+  const [text, setText] = useState("");
+  const [showTemplates, setShowTemplates] = useState(false);
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -39,8 +50,6 @@ export function MessagesLive({
           filter: `lead_id=eq.${leadId}`,
         },
         () => {
-          // Server-Component soll Daten neu laden — das ist der einzige
-          // Weg an die Daten zu kommen, die durch RLS gefiltert sind.
           router.refresh();
         },
       )
@@ -51,14 +60,43 @@ export function MessagesLive({
     };
   }, [leadId, router]);
 
+  // Auto-grow textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(200, ta.scrollHeight) + "px";
+  }, [text]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  }
+
+  function useTemplate(t: string) {
+    setText(t);
+    setShowTemplates(false);
+    textareaRef.current?.focus();
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium text-ink-700 text-sm">
-          {messages.length === 0
-            ? "Noch keine Nachrichten"
-            : `${messages.length} Nachricht${messages.length === 1 ? "" : "en"}`}
-        </h3>
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between pb-3 border-b border-ink-100">
+        <div className="flex items-center gap-3">
+          <div className="grid place-items-center h-9 w-9 rounded-full bg-ink-100 text-ink-700 font-semibold text-sm">
+            {(verkaeuferName?.[0] ?? "V").toUpperCase()}
+          </div>
+          <div>
+            <h3 className="font-semibold text-ink-900 text-sm">
+              {verkaeuferName ?? "Verkäufer"}
+            </h3>
+            <p className="text-xs text-ink-500">
+              {messages.length} Nachricht{messages.length === 1 ? "" : "en"}
+            </p>
+          </div>
+        </div>
         <span className="inline-flex items-center gap-1.5 text-xs text-ink-500">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
@@ -68,51 +106,116 @@ export function MessagesLive({
         </span>
       </div>
 
-      {messages.length === 0 ? (
-        <p className="text-sm text-ink-500 text-center py-6">
-          Noch keine Nachrichten zu diesem Lead.
-        </p>
-      ) : (
-        messages.map((m) => (
-          <Message
-            key={m.id}
-            from={
-              m.von === "haendler"
-                ? "Sie"
-                : `Verkäufer · ${verkaeuferName ?? ""}`.trim()
-            }
-            time={formatRelative(m.created_at)}
-            text={m.text}
-            mine={m.von === "haendler"}
-            status={m.delivery_status}
-            failureReason={m.failure_reason}
-          />
-        ))
-      )}
+      <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+        {messages.length === 0 ? (
+          <p className="text-sm text-ink-500 text-center py-10">
+            Noch keine Nachrichten zu diesem Lead.
+          </p>
+        ) : (
+          messages.map((m) => (
+            <Message
+              key={m.id}
+              from={
+                m.von === "haendler"
+                  ? "Sie"
+                  : `${verkaeuferName ?? "Verkäufer"}`
+              }
+              time={formatRelative(m.created_at)}
+              text={m.text}
+              mine={m.von === "haendler"}
+              status={m.delivery_status}
+              failureReason={m.failure_reason}
+            />
+          ))
+        )}
+      </div>
 
-      <form
-        ref={formRef}
-        action={async (fd) => {
-          await sendMessageAction(fd);
-          formRef.current?.reset();
-        }}
-        className="pt-2 flex gap-2"
-      >
-        <input type="hidden" name="lead_id" value={leadId} />
-        <input
-          type="text"
-          name="text"
-          required
-          placeholder="Nachricht schreiben …"
-          className="flex-1 h-11 px-3 rounded-lg border border-ink-200 bg-white text-sm focus:border-brand-500 focus:outline-none"
-        />
-        <button
-          type="submit"
-          className="h-11 px-5 rounded-lg bg-brand-700 text-white text-sm font-medium hover:bg-brand-800"
+      <div className="border-t border-ink-100 pt-3">
+        {showTemplates && (
+          <div className="mb-2 grid gap-1.5">
+            <p className="text-xs font-medium text-ink-500 mb-1">
+              Schnellantworten
+            </p>
+            {QUICK_REPLIES.map((q, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => useTemplate(q)}
+                className="text-left text-sm px-3 py-2 rounded-lg border border-ink-200 hover:border-brand-400 hover:bg-brand-50/50 text-ink-700"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <form
+          ref={formRef}
+          action={async (fd) => {
+            const value = text.trim();
+            if (!value) return;
+            fd.set("text", value);
+            await sendMessageAction(fd);
+            setText("");
+            formRef.current?.reset();
+          }}
+          className="flex flex-col gap-2"
         >
-          Senden
-        </button>
-      </form>
+          <input type="hidden" name="lead_id" value={leadId} />
+          <input type="hidden" name="text" value={text} />
+
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowTemplates((v) => !v)}
+              className={`shrink-0 h-10 w-10 rounded-lg border transition-colors grid place-items-center ${
+                showTemplates
+                  ? "bg-brand-50 border-brand-300 text-brand-700"
+                  : "bg-white border-ink-200 text-ink-500 hover:bg-ink-50"
+              }`}
+              title="Schnellantworten"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+                <path
+                  d="M7 7h10M7 12h7M7 17h10M3 7h0M3 12h0M3 17h0"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={`Antwort an ${verkaeuferName ?? "Verkäufer"} schreiben …`}
+              rows={1}
+              className="flex-1 px-3 py-2.5 rounded-lg border border-ink-200 bg-white text-sm resize-none focus:border-brand-500 focus:outline-none min-h-[44px]"
+            />
+
+            <button
+              type="submit"
+              disabled={!text.trim()}
+              className="shrink-0 h-10 px-4 rounded-lg bg-brand-700 text-white text-sm font-medium hover:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <span>Senden</span>
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                <path
+                  d="M3 12 21 3l-7 18-3-7-8-2Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <p className="text-[11px] text-ink-400 px-1">
+            Bot sendet automatisch via mobile.de · Strg+Enter zum schnellen Senden
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
@@ -158,83 +261,70 @@ function Message({
     : "bg-ink-100 text-ink-900";
 
   return (
-    <div className={mine ? "flex justify-end" : "flex"}>
-      <div
-        className={[
-          "max-w-md rounded-xl px-4 py-3 text-sm whitespace-pre-wrap",
-          bubbleBg,
-        ].join(" ")}
-      >
+    <div className={mine ? "flex justify-end gap-2" : "flex gap-2"}>
+      {!mine && (
+        <div className="grid place-items-center h-8 w-8 rounded-full bg-ink-200 text-ink-700 text-xs font-semibold shrink-0">
+          {from[0]?.toUpperCase() ?? "V"}
+        </div>
+      )}
+      <div className="max-w-md">
         <div
-          className={`text-xs mb-1 flex items-center gap-1.5 ${
-            mine && !isPending && !isFailed
-              ? "text-brand-100"
-              : mine && isPending
-                ? "text-brand-700"
-                : mine && isFailed
-                  ? "text-red-700"
-                  : "text-ink-500"
-          }`}
+          className={`text-[11px] mb-1 flex items-center gap-1.5 ${
+            mine ? "justify-end" : ""
+          } text-ink-500`}
         >
-          <span>
-            {from} · {time}
-          </span>
-          {mine && isPending && (
-            <span className="inline-flex items-center gap-1">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-3 w-3 animate-pulse"
-                aria-hidden
-              >
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                <path
-                  d="M12 7v5l3 3"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              wartet auf Bot
-            </span>
-          )}
-          {mine && status === "sent" && (
-            <span className="inline-flex items-center" title="Erfolgreich gesendet">
-              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
-                <path
-                  d="m5 12 4 4L19 6"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          )}
-          {mine && isFailed && (
-            <span
-              className="inline-flex items-center gap-1"
-              title={failureReason ?? ""}
-            >
-              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
-                <path
-                  d="m6 6 12 12M18 6 6 18"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              fehlgeschlagen
-            </span>
+          <span className="font-medium text-ink-700">{from}</span>
+          <span>·</span>
+          <span>{time}</span>
+        </div>
+        <div
+          className={[
+            "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap shadow-sm",
+            bubbleBg,
+          ].join(" ")}
+        >
+          {text}
+          {isFailed && failureReason && (
+            <div className="mt-2 pt-2 border-t border-red-200 text-xs text-red-700">
+              Grund: {failureReason}
+            </div>
           )}
         </div>
-        {text}
-        {isFailed && failureReason && (
-          <div className="mt-2 pt-2 border-t border-red-200 text-xs text-red-700">
-            Grund: {failureReason}
+        {mine && (
+          <div className="flex justify-end mt-1 text-[11px] gap-1">
+            {isPending && (
+              <span className="inline-flex items-center gap-1 text-brand-700">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 animate-pulse" aria-hidden>
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                wartet auf Bot
+              </span>
+            )}
+            {status === "sent" && (
+              <span className="inline-flex items-center gap-1 text-green-700" title="Erfolgreich gesendet">
+                <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
+                  <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                gesendet
+              </span>
+            )}
+            {isFailed && (
+              <span className="inline-flex items-center gap-1 text-red-700" title={failureReason ?? ""}>
+                <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" aria-hidden>
+                  <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+                fehlgeschlagen
+              </span>
+            )}
           </div>
         )}
       </div>
+      {mine && (
+        <div className="grid place-items-center h-8 w-8 rounded-full bg-brand-700 text-white text-xs font-semibold shrink-0">
+          {from[0]?.toUpperCase()}
+        </div>
+      )}
     </div>
   );
 }
