@@ -8,6 +8,7 @@ import {
   LEAD_STATUSES,
   LEAD_STATUS_LABEL,
   LEAD_STATUS_TONE,
+  isCheapestInMarket,
   type Lead,
   type LeadStatus,
 } from "@/lib/database.types";
@@ -15,6 +16,7 @@ import { formatEuro, formatKm } from "@/lib/format";
 import { NewLeadButton } from "./new-lead-button";
 import { SeedButton } from "../seed-button";
 import { LeadsFilterBar } from "./leads-filter-bar";
+import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
 export const metadata: Metadata = {
   title: "Leads",
@@ -176,7 +178,7 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                           ].join(" ")}
                         >
                           <Td>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {lead.has_unread_seller_message && (
                                 <span
                                   title="Neue Verkäufer-Antwort"
@@ -188,6 +190,9 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                                   </span>
                                   Neu
                                 </span>
+                              )}
+                              {isCheapestInMarket(lead) && (
+                                <CheapestBadge size="sm" />
                               )}
                               <div className="font-medium text-ink-900">
                                 {lead.fahrzeug}

@@ -134,3 +134,17 @@ export const LEAD_STATUSES: LeadStatus[] = [
   "abgelehnt",
   "abgeschlossen",
 ];
+
+// Lead ist "guenstigster Markt", wenn sein Inseratspreis <= dem
+// guenstigsten Vergleichspreis ist, den der Bot in der Marktanalyse
+// gefunden hat. Wenn ja, ist es ein besonders attraktives Inserat
+// (= Schnapper-Potenzial).
+export function isCheapestInMarket(lead: Lead): boolean {
+  const inserat = Number(lead.angebot_preis);
+  const lowest = Number(
+    lead.bot_meta?.comparison_meta?.lowest_market_price,
+  );
+  if (!Number.isFinite(inserat) || inserat <= 0) return false;
+  if (!Number.isFinite(lowest) || lowest <= 0) return false;
+  return inserat <= lowest;
+}

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   LEAD_STATUS_LABEL,
   LEAD_STATUS_TONE,
+  isCheapestInMarket,
   type Lead,
   type LeadMessage,
 } from "@/lib/database.types";
@@ -14,6 +15,7 @@ import { formatEuro, formatKm, formatRelative } from "@/lib/format";
 import { sendMessage, markLeadRead } from "../actions";
 import { StatusSelector } from "./status-selector";
 import { MessagesLive } from "./messages-live";
+import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
 export default async function LeadDetailPage(
   props: PageProps<"/leads/[id]">,
@@ -65,6 +67,7 @@ export default async function LeadDetailPage(
         subtitle="Details, Antworten, Ankaufspreis und Termin"
         action={
           <>
+            {isCheapestInMarket(lead) && <CheapestBadge size="md" />}
             <LinkButton href="/leads" variant="ghost" size="sm">
               ← Zur Liste
             </LinkButton>

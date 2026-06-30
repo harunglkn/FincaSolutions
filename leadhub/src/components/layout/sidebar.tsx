@@ -21,6 +21,11 @@ const mainNav = [
     icon: <Icon d="M3 12 12 4l9 8M5 10v10h14V10" />,
   },
   {
+    label: "Posteingang",
+    href: "/posteingang",
+    icon: <Icon d="M3 8l9 6 9-6M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z" />,
+  },
+  {
     label: "Leads",
     href: "/leads",
     icon: <Icon d="M4 6h16M4 12h16M4 18h10" />,
@@ -98,7 +103,7 @@ export async function Sidebar() {
           <NavLink
             key={item.href}
             {...item}
-            badge={item.href === "/leads" ? unread : undefined}
+            badge={item.href === "/posteingang" ? unread : undefined}
           />
         ))}
 
