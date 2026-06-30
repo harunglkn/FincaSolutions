@@ -11,7 +11,7 @@ import {
   type LeadMessage,
 } from "@/lib/database.types";
 import { formatEuro, formatKm, formatRelative } from "@/lib/format";
-import { sendMessage } from "../actions";
+import { sendMessage, markLeadRead } from "../actions";
 import { StatusSelector } from "./status-selector";
 import { MessagesLive } from "./messages-live";
 
@@ -45,6 +45,14 @@ export default async function LeadDetailPage(
     campaignName = data?.name ?? null;
   }
 
+  // Wenn unread: vormerken, dass wir nach Anzeige als "gelesen" markieren.
+  const wasUnread = !!lead.has_unread_seller_message;
+  if (wasUnread) {
+    // Fire-and-forget: Read-Status aktualisieren, ohne diese Seite zu
+    // revalidieren (waere Endlos-Schleife).
+    await supabase.rpc("mark_lead_read", { p_lead_id: lead.id });
+  }
+
   const marge =
     lead.marktwert !== null && lead.ankaufspreis !== null
       ? lead.marktwert - lead.ankaufspreis
@@ -64,6 +72,35 @@ export default async function LeadDetailPage(
           </>
         }
       />
+
+      {wasUnread && (
+        <div className="border-b border-amber-200 bg-amber-50 px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid place-items-center h-9 w-9 rounded-full bg-amber-500 text-white">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+                <path
+                  d="M12 9v3.5M12 16h.01M5.07 19h13.86a2 2 0 0 0 1.79-2.91l-6.93-13.5a2 2 0 0 0-3.58 0L3.28 16.09A2 2 0 0 0 5.07 19Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <div className="text-sm">
+              <div className="font-semibold text-amber-900">
+                Neue Antwort vom Verkäufer
+              </div>
+              <div className="text-amber-700">
+                {lead.last_seller_message_at
+                  ? `Eingegangen ${formatRelative(lead.last_seller_message_at)}`
+                  : "Frisch im Posteingang"}
+                {" · "}wurde jetzt als gelesen markiert
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

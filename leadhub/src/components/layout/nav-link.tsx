@@ -8,9 +8,10 @@ type NavLinkProps = {
   href: string;
   icon: ReactNode;
   label: string;
+  badge?: number;
 };
 
-export function NavLink({ href, icon, label }: NavLinkProps) {
+export function NavLink({ href, icon, label, badge }: NavLinkProps) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(href + "/");
 
@@ -25,7 +26,15 @@ export function NavLink({ href, icon, label }: NavLinkProps) {
       ].join(" ")}
     >
       <span className={active ? "text-brand-700" : "text-ink-400"}>{icon}</span>
-      {label}
+      <span className="flex-1">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span
+          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-sm"
+          title={`${badge} ungelesene Antworten`}
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }

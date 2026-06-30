@@ -35,6 +35,7 @@ export default async function DashboardPage() {
     recentLeadsResult,
     allLeadsResult,
     botLeadsTodayResult,
+    unreadResult,
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -61,6 +62,12 @@ export default async function DashboardPage() {
       .gte("created_at", todayIso)
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("leads")
+      .select("id, fahrzeug, verkaeufer_name, ankaufspreis, last_seller_message_at")
+      .eq("has_unread_seller_message", true)
+      .order("last_seller_message_at", { ascending: false })
+      .limit(10),
   ]);
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
@@ -69,6 +76,7 @@ export default async function DashboardPage() {
   const recentLeads = (recentLeadsResult.data ?? []) as Lead[];
   const allLeads = allLeadsResult.data ?? [];
   const botLeadsToday = botLeadsTodayResult.data ?? [];
+  const unreadLeads = unreadResult.data ?? [];
 
   const botAnkaufSummeHeute = botLeadsToday.reduce(
     (sum, l) => sum + (Number(l.ankaufspreis) || 0),
@@ -104,6 +112,73 @@ export default async function DashboardPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-6">
+        {unreadLeads.length > 0 && (
+          <Card className="border-amber-300 bg-gradient-to-br from-amber-50 to-white">
+            <CardHeader className="flex items-center justify-between border-b-amber-200">
+              <div className="flex items-center gap-3">
+                <span className="grid place-items-center h-10 w-10 rounded-full bg-amber-500 text-white shadow-sm">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+                    <path
+                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <CardTitle>
+                    {unreadLeads.length}{" "}
+                    {unreadLeads.length === 1
+                      ? "neue Verkäufer-Antwort"
+                      : "neue Verkäufer-Antworten"}
+                  </CardTitle>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Warten auf deine Bearbeitung. Klick öffnet den Lead und
+                    markiert ihn automatisch als gelesen.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardBody className="!p-0">
+              <ul className="divide-y divide-amber-100">
+                {unreadLeads.map((l) => (
+                  <li key={l.id} className="px-6 py-3 hover:bg-amber-50/60">
+                    <Link
+                      href={`/leads/${l.id}`}
+                      className="flex items-center gap-4"
+                    >
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-ink-900 truncate">
+                          {l.fahrzeug}
+                        </p>
+                        <p className="text-xs text-ink-500 truncate">
+                          {l.verkaeufer_name ?? "Verkäufer"}
+                          {l.last_seller_message_at &&
+                            ` · ${formatRelative(l.last_seller_message_at)}`}
+                        </p>
+                      </div>
+                      {l.ankaufspreis && (
+                        <span className="text-sm font-semibold text-brand-800 shrink-0">
+                          {formatEuro(Number(l.ankaufspreis))}
+                        </span>
+                      )}
+                      <span className="text-brand-700 text-sm font-medium shrink-0">
+                        Öffnen →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          </Card>
+        )}
+
         {isEmpty && (
           <Card>
             <CardBody className="py-10 text-center space-y-3">

@@ -69,14 +69,21 @@ export async function Sidebar() {
   } = await supabase.auth.getUser();
   const email = user?.email;
 
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("firma")
-        .eq("id", user.id)
-        .maybeSingle()
-    : { data: null };
+  const [{ data: profile }, { count: unreadCount }] = user
+    ? await Promise.all([
+        supabase
+          .from("profiles")
+          .select("firma")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("has_unread_seller_message", true),
+      ])
+    : [{ data: null }, { count: 0 }];
   const firma = profile?.firma ?? null;
+  const unread = unreadCount ?? 0;
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
@@ -88,7 +95,11 @@ export async function Sidebar() {
           Arbeitsbereich
         </p>
         {mainNav.map((item) => (
-          <NavLink key={item.href} {...item} />
+          <NavLink
+            key={item.href}
+            {...item}
+            badge={item.href === "/leads" ? unread : undefined}
+          />
         ))}
 
         <p className="px-3 mt-6 text-[11px] uppercase tracking-widest font-semibold text-ink-400 mb-2">

@@ -166,10 +166,32 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                     </thead>
                     <tbody className="divide-y divide-ink-100">
                       {leads.map((lead) => (
-                        <tr key={lead.id} className="hover:bg-ink-50/60">
+                        <tr
+                          key={lead.id}
+                          className={[
+                            "hover:bg-ink-50/60",
+                            lead.has_unread_seller_message
+                              ? "bg-amber-50/40 hover:bg-amber-50/70"
+                              : "",
+                          ].join(" ")}
+                        >
                           <Td>
-                            <div className="font-medium text-ink-900">
-                              {lead.fahrzeug}
+                            <div className="flex items-center gap-2">
+                              {lead.has_unread_seller_message && (
+                                <span
+                                  title="Neue Verkäufer-Antwort"
+                                  className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm"
+                                >
+                                  <span className="relative flex h-1.5 w-1.5">
+                                    <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-75 animate-ping" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                                  </span>
+                                  Neu
+                                </span>
+                              )}
+                              <div className="font-medium text-ink-900">
+                                {lead.fahrzeug}
+                              </div>
                             </div>
                             <div className="text-xs text-ink-500">
                               {lead.baujahr ?? "—"} ·{" "}

@@ -67,6 +67,10 @@ export type Lead = {
   inserat_url: string | null;
   bot_meta: BotMeta | null;
 
+  // Unread-Markierung (gesetzt durch DB-Trigger bei neuer Verkaeufer-Antwort)
+  has_unread_seller_message: boolean;
+  last_seller_message_at: string | null;
+
   created_at: string;
   updated_at: string;
 };

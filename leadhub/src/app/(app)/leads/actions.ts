@@ -135,3 +135,12 @@ export async function seedDemoData() {
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
+
+export async function markLeadRead(leadId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_lead_read", { p_lead_id: leadId });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+}
