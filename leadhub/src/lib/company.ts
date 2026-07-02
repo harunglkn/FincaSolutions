@@ -1,27 +1,25 @@
 /**
  * Zentrale Firmen-/Anbieterdaten fuer Impressum, Datenschutz und Footer.
- *
- * >>> WICHTIG: Bitte die mit TODO markierten Felder mit deinen echten
- * >>> rechtlichen Angaben ausfuellen, BEVOR du die Seite Kunden zeigst.
- * >>> In Deutschland sind Name + ladungsfaehige Anschrift Pflicht (Impressum).
+ * Aenderungen hier wirken automatisch auf allen Rechtsseiten.
  */
 export const COMPANY = {
   brand: "Finca Solutions",
 
-  // TODO: vollstaendiger Name bzw. Firmierung (z.B. "Max Mustermann" oder "Finca Solutions GmbH")
-  legalName: "Finca Solutions – Inhaber Harun Gülakan",
+  // Firmierung (Einzelunternehmen)
+  legalName: "FincaSolutions",
+  owner: "Gültekin Harun",
 
-  // TODO: ladungsfaehige Anschrift
-  street: "Musterstraße 1",
-  zipCity: "00000 Musterstadt",
+  // Ladungsfaehige Anschrift
+  street: "Robert-Bosch-Straße 4",
+  zipCity: "64319 Pfungstadt",
   country: "Deutschland",
 
   email: "harunglkn@gmail.com",
+  phone: "0170 2333592",
+  website: "https://www.finca-solutions.de",
 
-  // TODO: geschaeftliche Telefonnummer (optional, aber empfohlen)
-  phone: "",
-
-  // TODO: nur falls vorhanden (Einzelunternehmer brauchen das i.d.R. nicht)
-  vatId: "", // USt-IdNr.
-  register: "", // z.B. "Amtsgericht Musterstadt, HRB 12345"
+  // Steuer: Einzelunternehmen mit Steuernummer, keine USt-IdNr., kein Handelsregister.
+  taxNumber: "007 823 32361", // Steuernummer (freiwillige Angabe)
+  vatId: "", // USt-IdNr. – nicht vorhanden
+  register: "", // kein Handelsregistereintrag (Einzelunternehmen)
 } as const;

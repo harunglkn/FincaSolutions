@@ -29,6 +29,7 @@ export default function ImpressumPage() {
               Angaben gemäß § 5 DDG
             </h2>
             <p className="font-medium text-ink-900">{COMPANY.legalName}</p>
+            {COMPANY.owner && <p>Inhaber: {COMPANY.owner}</p>}
             <p>{COMPANY.street}</p>
             <p>{COMPANY.zipCity}</p>
             <p>{COMPANY.country}</p>
@@ -48,15 +49,29 @@ export default function ImpressumPage() {
               </a>
             </p>
             {COMPANY.phone && <p>Telefon: {COMPANY.phone}</p>}
+            {COMPANY.website && (
+              <p>
+                Web:{" "}
+                <a
+                  href={COMPANY.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
+                  {COMPANY.website.replace(/^https?:\/\//, "")}
+                </a>
+              </p>
+            )}
           </section>
 
-          {(COMPANY.vatId || COMPANY.register) && (
+          {(COMPANY.vatId || COMPANY.taxNumber || COMPANY.register) && (
             <section className="space-y-1 text-ink-700">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500 mb-2">
-                Registereintrag / Steuer
+                Steuer
               </h2>
               {COMPANY.register && <p>{COMPANY.register}</p>}
               {COMPANY.vatId && <p>USt-IdNr.: {COMPANY.vatId}</p>}
+              {COMPANY.taxNumber && <p>Steuernummer: {COMPANY.taxNumber}</p>}
             </section>
           )}
 
@@ -64,9 +79,25 @@ export default function ImpressumPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500 mb-2">
               Verantwortlich für den Inhalt
             </h2>
-            <p>{COMPANY.legalName}</p>
+            {COMPANY.owner && <p>{COMPANY.owner}</p>}
             <p>{COMPANY.street}</p>
             <p>{COMPANY.zipCity}</p>
+          </section>
+
+          <section className="space-y-3 text-ink-700">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500 mb-2">
+              Haftungsausschluss
+            </h2>
+            <p>
+              Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt.
+              Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte
+              können wir jedoch keine Gewähr übernehmen.
+            </p>
+            <p>
+              Unsere Website enthält Links zu externen Websites Dritter, auf
+              deren Inhalte wir keinen Einfluss haben. Für diese fremden Inhalte
+              übernehmen wir keine Gewähr.
+            </p>
           </section>
 
           <section className="text-xs text-ink-400 pt-4 border-t border-ink-200">

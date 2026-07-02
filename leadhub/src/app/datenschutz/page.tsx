@@ -34,6 +34,7 @@ export default function DatenschutzPage() {
 
           <Section title="1. Verantwortlicher">
             <p>{COMPANY.legalName}</p>
+            {COMPANY.owner && <p>Inhaber: {COMPANY.owner}</p>}
             <p>
               {COMPANY.street}, {COMPANY.zipCity}
             </p>
