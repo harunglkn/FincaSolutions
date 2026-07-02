@@ -3,7 +3,6 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { createClient } from "@/lib/supabase/server";
-import { formatEuro } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Berichte",
@@ -15,7 +14,7 @@ type DayBucket = {
   anfragen: number;
   termine: number;
   abgeschlossen: number;
-  potenzial: number;
+  antworten: number;
 };
 
 function isoDay(d: Date): string {
@@ -38,7 +37,7 @@ export default async function BerichtePage() {
 
   const { data: leads } = await supabase
     .from("leads")
-    .select("created_at, status, ankaufspreis")
+    .select("created_at, status, last_seller_message_at")
     .gte("created_at", sevenDaysAgo.toISOString());
 
   const buckets: DayBucket[] = [];
@@ -52,24 +51,30 @@ export default async function BerichtePage() {
       anfragen: 0,
       termine: 0,
       abgeschlossen: 0,
-      potenzial: 0,
+      antworten: 0,
     });
   }
 
   for (const lead of leads ?? []) {
     const dayKey = isoDay(new Date(lead.created_at));
     const bucket = buckets.find((b) => b.datum === dayKey);
-    if (!bucket) continue;
-    bucket.anfragen += 1;
-    if (lead.status === "termin_vereinbart") bucket.termine += 1;
-    if (lead.status === "abgeschlossen") bucket.abgeschlossen += 1;
-    if (lead.ankaufspreis) bucket.potenzial += Number(lead.ankaufspreis);
+    if (bucket) {
+      bucket.anfragen += 1;
+      if (lead.status === "termin_vereinbart") bucket.termine += 1;
+      if (lead.status === "abgeschlossen") bucket.abgeschlossen += 1;
+    }
+    // Verkäufer-Antworten am Tag der letzten Antwort zählen
+    if (lead.last_seller_message_at) {
+      const replyKey = isoDay(new Date(lead.last_seller_message_at));
+      const replyBucket = buckets.find((b) => b.datum === replyKey);
+      if (replyBucket) replyBucket.antworten += 1;
+    }
   }
 
   const wocheAnfragen = buckets.reduce((s, b) => s + b.anfragen, 0);
   const wocheTermine = buckets.reduce((s, b) => s + b.termine, 0);
   const wocheAbgeschlossen = buckets.reduce((s, b) => s + b.abgeschlossen, 0);
-  const wochePotenzial = buckets.reduce((s, b) => s + b.potenzial, 0);
+  const wocheAntworten = buckets.reduce((s, b) => s + b.antworten, 0);
 
   const maxAnfragen = Math.max(1, ...buckets.map((b) => b.anfragen));
 
@@ -89,8 +94,8 @@ export default async function BerichtePage() {
             value={wocheAbgeschlossen}
           />
           <StatCard
-            label="Diese Woche · Einkaufspotenzial"
-            value={formatEuro(wochePotenzial)}
+            label="Diese Woche · Antworten"
+            value={wocheAntworten}
           />
         </section>
 
@@ -138,7 +143,7 @@ export default async function BerichtePage() {
                   <th className="px-4 py-3">Anfragen</th>
                   <th className="px-4 py-3">Termine</th>
                   <th className="px-4 py-3">Ankäufe</th>
-                  <th className="px-4 py-3">Potenzial</th>
+                  <th className="px-4 py-3">Antworten</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
@@ -152,9 +157,7 @@ export default async function BerichtePage() {
                     <td className="px-4 py-3 font-semibold text-brand-800">
                       {row.abgeschlossen}
                     </td>
-                    <td className="px-4 py-3 text-ink-900">
-                      {row.potenzial > 0 ? formatEuro(row.potenzial) : "—"}
-                    </td>
+                    <td className="px-4 py-3 text-ink-900">{row.antworten}</td>
                   </tr>
                 ))}
               </tbody>

@@ -64,7 +64,9 @@ export default async function DashboardPage() {
       .limit(8),
     supabase
       .from("leads")
-      .select("id, fahrzeug, verkaeufer_name, ankaufspreis, last_seller_message_at")
+      .select("id, fahrzeug, verkaeufer_name, ankaufspreis, last_seller_message_at", {
+        count: "exact",
+      })
       .eq("has_unread_seller_message", true)
       .order("last_seller_message_at", { ascending: false })
       .limit(10),
@@ -77,20 +79,7 @@ export default async function DashboardPage() {
   const allLeads = allLeadsResult.data ?? [];
   const botLeadsToday = botLeadsTodayResult.data ?? [];
   const unreadLeads = unreadResult.data ?? [];
-
-  const botAnkaufSummeHeute = botLeadsToday.reduce(
-    (sum, l) => sum + (Number(l.ankaufspreis) || 0),
-    0,
-  );
-
-  // Einkaufspotenzial: Summe der ankaufspreise aller noch offenen Leads
-  const einkaufspotenzial = allLeads
-    .filter((l) =>
-      ["antwort_offen", "termin_vereinbart", "hohes_potenzial"].includes(
-        l.status,
-      ),
-    )
-    .reduce((sum, l) => sum + (Number(l.ankaufspreis) || 0), 0);
+  const unreadCount = unreadResult.count ?? unreadLeads.length;
 
   // Tagesbericht-Zahlen
   const tagesbericht = {
@@ -199,16 +188,16 @@ export default async function DashboardPage() {
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard label="Neue Anfragen heute" value={anfragenHeute} />
-          <StatCard label="Offene Antworten" value={offeneAntworten} />
           <StatCard
-            label="Einkaufspotenzial"
-            value={formatEuro(einkaufspotenzial)}
-            hint="offene Leads"
+            label="Verkäufer-Antworten"
+            value={unreadCount}
+            hint={unreadCount === 1 ? "unbeantwortet" : "unbeantwortet"}
           />
+          <StatCard label="Offene Anfragen" value={offeneAntworten} />
           <StatCard
             label="Aktive Kampagnen"
             value={kampagnenAktiv}
-            hint="Suchlaeufe"
+            hint="Suchläufe"
           />
         </section>
 
@@ -220,7 +209,7 @@ export default async function DashboardPage() {
                   🤖 Bot-Aktivität heute · {botLeadsToday.length} Kontakte
                 </CardTitle>
                 <p className="mt-0.5 text-xs text-ink-500">
-                  Gesamt-Einkaufspotenzial: {formatEuro(botAnkaufSummeHeute)}
+                  Automatisch angeschriebene Fahrzeuge über Ihre Suchläufe
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
