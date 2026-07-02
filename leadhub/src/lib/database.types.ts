@@ -71,6 +71,9 @@ export type Lead = {
   has_unread_seller_message: boolean;
   last_seller_message_at: string | null;
 
+  // mobile.de Konversations-ID (gelernt beim ersten Antwort-Sync)
+  conversation_id: string | null;
+
   created_at: string;
   updated_at: string;
 };
