@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 import type { Campaign } from "@/lib/database.types";
 import { NewCampaignButton } from "./new-campaign-button";
 import { ToggleButton } from "./toggle-button";
-import { SeedButton } from "../seed-button";
 
 export const metadata: Metadata = {
   title: "Kampagnen",
@@ -83,7 +82,6 @@ export default async function KampagnenPage() {
               </div>
               <div className="flex justify-center gap-2">
                 <NewCampaignButton />
-                <SeedButton />
               </div>
             </CardBody>
           </Card>

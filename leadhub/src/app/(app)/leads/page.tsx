@@ -14,7 +14,6 @@ import {
 } from "@/lib/database.types";
 import { formatEuro, formatKm } from "@/lib/format";
 import { NewLeadButton } from "./new-lead-button";
-import { SeedButton } from "../seed-button";
 import { LeadsFilterBar } from "./leads-filter-bar";
 import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
@@ -131,12 +130,12 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                   Noch keine Leads
                 </h2>
                 <p className="mt-1 text-sm text-ink-500 max-w-md mx-auto">
-                  Legen Sie Ihren ersten Lead an oder laden Sie Beispieldaten.
+                  Sobald Ihre Suchläufe passende Fahrzeuge finden, erscheinen
+                  sie hier. Sie können auch manuell einen Lead erfassen.
                 </p>
               </div>
               <div className="flex justify-center gap-2">
                 <NewLeadButton campaigns={campaigns} />
-                <SeedButton />
               </div>
             </CardBody>
           </Card>

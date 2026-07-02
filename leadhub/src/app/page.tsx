@@ -73,7 +73,14 @@ export default function LandingPage() {
       </main>
 
       <footer className="px-6 lg:px-10 py-6 border-t border-ink-200 text-xs text-ink-500 text-center">
-        © {new Date().getFullYear()} Finca-Solutions — Alle Rechte vorbehalten.
+        © {new Date().getFullYear()} Finca Solutions · {" "}
+        <Link href="/impressum" className="hover:underline">
+          Impressum
+        </Link>{" "}
+        ·{" "}
+        <Link href="/datenschutz" className="hover:underline">
+          Datenschutz
+        </Link>
       </footer>
     </div>
   );

@@ -27,7 +27,14 @@ export default async function LoginPage(props: PageProps<"/login">) {
           </p>
         </div>
         <p className="text-xs text-brand-200">
-          © {new Date().getFullYear()} Finca-Solutions
+          © {new Date().getFullYear()} Finca Solutions ·{" "}
+          <Link href="/impressum" className="hover:underline">
+            Impressum
+          </Link>{" "}
+          ·{" "}
+          <Link href="/datenschutz" className="hover:underline">
+            Datenschutz
+          </Link>
         </p>
       </div>
 

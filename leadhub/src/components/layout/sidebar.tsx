@@ -49,14 +49,6 @@ const mainNav = [
   },
 ];
 
-const adminNav = [
-  {
-    label: "Adminbereich",
-    href: "/admin",
-    icon: <Icon d="M12 3l8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4Z" />,
-  },
-];
-
 function initialsFromEmail(email: string | undefined) {
   if (!email) return "··";
   const local = email.split("@")[0];
@@ -105,13 +97,6 @@ export async function Sidebar() {
             {...item}
             badge={item.href === "/posteingang" ? unread : undefined}
           />
-        ))}
-
-        <p className="px-3 mt-6 text-[11px] uppercase tracking-widest font-semibold text-ink-400 mb-2">
-          Verwaltung
-        </p>
-        {adminNav.map((item) => (
-          <NavLink key={item.href} {...item} />
         ))}
       </nav>
       <div className="px-4 py-4 border-t border-ink-100">

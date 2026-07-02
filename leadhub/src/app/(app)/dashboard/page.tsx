@@ -11,7 +11,6 @@ import {
   type Lead,
 } from "@/lib/database.types";
 import { formatEuro, formatRelative } from "@/lib/format";
-import { SeedButton } from "../seed-button";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -172,15 +171,17 @@ export default async function DashboardPage() {
           <Card>
             <CardBody className="py-10 text-center space-y-3">
               <h2 className="text-lg font-semibold text-ink-900">
-                Willkommen im LeadHub 👋
+                Willkommen bei Finca Solutions 👋
               </h2>
               <p className="text-sm text-ink-500 max-w-md mx-auto">
-                Damit du gleich etwas zu sehen hast, kannst du Beispieldaten
-                laden — oder direkt deinen ersten Lead anlegen.
+                Legen Sie Ihre erste Kampagne an, um automatisch passende
+                Fahrzeuge zu finden — oder erfassen Sie direkt einen Lead.
               </p>
               <div className="flex justify-center gap-2 pt-2">
-                <SeedButton />
-                <LinkButton href="/leads">Zur Lead-Liste</LinkButton>
+                <LinkButton href="/kampagnen">Erste Kampagne</LinkButton>
+                <LinkButton href="/leads" variant="secondary">
+                  Zur Lead-Liste
+                </LinkButton>
               </div>
             </CardBody>
           </Card>
