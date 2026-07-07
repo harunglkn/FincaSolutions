@@ -31,6 +31,13 @@ const mainNav = [
     icon: <Icon d="M4 6h16M4 12h16M4 18h10" />,
   },
   {
+    label: "Termine",
+    href: "/termine",
+    icon: (
+      <Icon d="M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+    ),
+  },
+  {
     label: "Kampagnen",
     href: "/kampagnen",
     icon: <Icon d="M3 11l18-7-7 18-3-8-8-3Z" />,
@@ -66,21 +73,31 @@ export async function Sidebar() {
   } = await supabase.auth.getUser();
   const email = user?.email;
 
-  const [{ data: profile }, { count: unreadCount }] = user
-    ? await Promise.all([
-        supabase
-          .from("profiles")
-          .select("firma")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .eq("has_unread_seller_message", true),
-      ])
-    : [{ data: null }, { count: 0 }];
+  const berlinToday = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Berlin",
+  });
+  const [{ data: profile }, { count: unreadCount }, { count: todayCount }] =
+    user
+      ? await Promise.all([
+          supabase
+            .from("profiles")
+            .select("firma")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("has_unread_seller_message", true),
+          supabase
+            .from("appointments")
+            .select("id", { count: "exact", head: true })
+            .eq("appointment_date", berlinToday)
+            .in("status", ["booked", "confirmed"]),
+        ])
+      : [{ data: null }, { count: 0 }, { count: 0 }];
   const firma = profile?.firma ?? null;
   const unread = unreadCount ?? 0;
+  const todayAppointments = todayCount ?? 0;
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
@@ -95,7 +112,13 @@ export async function Sidebar() {
           <NavLink
             key={item.href}
             {...item}
-            badge={item.href === "/posteingang" ? unread : undefined}
+            badge={
+              item.href === "/posteingang"
+                ? unread
+                : item.href === "/termine"
+                  ? todayAppointments
+                  : undefined
+            }
           />
         ))}
       </nav>

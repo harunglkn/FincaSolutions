@@ -10,11 +10,13 @@ import {
   isCheapestInMarket,
   type Lead,
   type LeadMessage,
+  type Appointment,
 } from "@/lib/database.types";
 import { formatEuro, formatKm, formatRelative } from "@/lib/format";
 import { sendMessage, markLeadRead } from "../actions";
 import { StatusSelector } from "./status-selector";
 import { MessagesLive } from "./messages-live";
+import { AppointmentPanel } from "./appointment-panel";
 import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
 export default async function LeadDetailPage(
@@ -54,6 +56,32 @@ export default async function LeadDetailPage(
     // revalidieren (waere Endlos-Schleife).
     await supabase.rpc("mark_lead_read", { p_lead_id: lead.id });
   }
+
+  // Termine dieses Leads laden; den relevanten (naechster aktiver, sonst letzter) waehlen.
+  const { data: apptData } = await supabase
+    .from("appointments")
+    .select("*")
+    .eq("lead_id", id)
+    .order("appointment_datetime", { ascending: false });
+  const appointments = (apptData ?? []) as Appointment[];
+  const nowMs = Date.now();
+  const primaryAppointment =
+    appointments
+      .filter(
+        (a) =>
+          (a.status === "booked" || a.status === "confirmed") &&
+          new Date(a.appointment_datetime).getTime() >= nowMs,
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.appointment_datetime).getTime() -
+          new Date(b.appointment_datetime).getTime(),
+      )[0] ??
+    appointments[0] ??
+    null;
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://fincasolutions.vercel.app";
+  const bookingUrl = `${appBaseUrl}/booking/lead/${lead.id}`;
 
   const marge =
     lead.marktwert !== null && lead.ankaufspreis !== null
@@ -146,6 +174,20 @@ export default async function LeadDetailPage(
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Termin</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <AppointmentPanel
+                leadId={lead.id}
+                bookingUrl={bookingUrl}
+                sellerName={lead.verkaeufer_name}
+                appointment={primaryAppointment}
+              />
+            </CardBody>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Einkaufspotenzial</CardTitle>
