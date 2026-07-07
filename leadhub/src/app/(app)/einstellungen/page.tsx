@@ -5,7 +5,8 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { logout } from "../auth-actions";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
-import type { Profile } from "@/lib/database.types";
+import { AvailabilityForm } from "./availability-form";
+import type { Profile, DealerAvailability } from "@/lib/database.types";
 
 export const metadata: Metadata = {
   title: "Einstellungen",
@@ -23,6 +24,12 @@ export default async function EinstellungenPage() {
     .eq("id", user!.id)
     .single();
 
+  const { data: availability } = await supabase
+    .from("dealer_availability")
+    .select("*")
+    .eq("dealer_id", user!.id)
+    .order("weekday");
+
   return (
     <>
       <Topbar title="Einstellungen" subtitle="Konto und Autohaus" />
@@ -34,6 +41,17 @@ export default async function EinstellungenPage() {
           </CardHeader>
           <CardBody>
             <ProfileForm profile={profile as Profile} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Termin-Verfügbarkeit</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <AvailabilityForm
+              rows={(availability ?? []) as DealerAvailability[]}
+            />
           </CardBody>
         </Card>
 
