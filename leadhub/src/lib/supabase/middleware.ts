@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/impressum", "/datenschutz"];
+// Praefixe, die ohne Login erreichbar sind (z.B. oeffentliche Buchungsseite).
+const PUBLIC_PREFIXES = ["/booking"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -34,7 +36,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = PUBLIC_PATHS.includes(path);
+  const isPublic =
+    PUBLIC_PATHS.includes(path) ||
+    PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

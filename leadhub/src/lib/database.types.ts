@@ -151,3 +151,131 @@ export function isCheapestInMarket(lead: Lead): boolean {
   if (!Number.isFinite(lowest) || lowest <= 0) return false;
   return inserat <= lowest;
 }
+
+// ============== Termine (v8) ==============
+
+export type AppointmentStatus =
+  | "booked"
+  | "confirmed"
+  | "completed"
+  | "missed"
+  | "cancelled"
+  | "rescheduled"
+  | "bought"
+  | "lost";
+
+export type Appointment = {
+  id: string;
+  dealer_id: string;
+  lead_id: string;
+  seller_name: string | null;
+  seller_phone: string | null;
+  seller_email: string | null;
+  vehicle_title: string | null;
+  vehicle_make: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+  vehicle_mileage: number | null;
+  listing_price: number | null;
+  offer_price: number | null;
+  appointment_date: string; // "YYYY-MM-DD"
+  appointment_time: string; // "HH:MM:SS"
+  appointment_datetime: string; // ISO timestamptz
+  duration_minutes: number;
+  status: AppointmentStatus;
+  note: string | null;
+  source: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DealerAvailability = {
+  id: string;
+  dealer_id: string;
+  weekday: number; // 1=Mo .. 7=So
+  start_time: string; // "HH:MM:SS"
+  end_time: string;
+  slot_minutes: number;
+  buffer_minutes: number;
+  max_appointments_per_day: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeadActivity = {
+  id: string;
+  dealer_id: string;
+  lead_id: string;
+  appointment_id: string | null;
+  type: string;
+  message: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+// Sichere, oeffentliche Lead-Ansicht (Rueckgabe von get_lead_for_booking)
+export type BookingLead = {
+  id: string;
+  fahrzeug: string;
+  baujahr: number | null;
+  kilometerstand: number | null;
+  getriebe: string | null;
+  kraftstoff: string | null;
+  erstzulassung: string | null;
+  angebot_preis: number | null;
+  dealer_firma: string | null;
+};
+
+export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
+  booked: "Gebucht",
+  confirmed: "Bestätigt",
+  completed: "Abgeschlossen",
+  missed: "Verpasst",
+  cancelled: "Abgesagt",
+  rescheduled: "Verschoben",
+  bought: "Gekauft",
+  lost: "Verloren",
+};
+
+export const APPOINTMENT_STATUS_TONE: Record<
+  AppointmentStatus,
+  "neutral" | "brand" | "success" | "warning" | "danger"
+> = {
+  booked: "brand",
+  confirmed: "brand",
+  completed: "success",
+  missed: "warning",
+  cancelled: "neutral",
+  rescheduled: "warning",
+  bought: "success",
+  lost: "danger",
+};
+
+// Termine, die einen Slot aktiv blockieren (Doppelbuchungs-Logik).
+export const ACTIVE_APPOINTMENT_STATUSES: AppointmentStatus[] = [
+  "booked",
+  "confirmed",
+  "completed",
+];
+
+export const WEEKDAY_LABEL: Record<number, string> = {
+  1: "Montag",
+  2: "Dienstag",
+  3: "Mittwoch",
+  4: "Donnerstag",
+  5: "Freitag",
+  6: "Samstag",
+  7: "Sonntag",
+};
+
+export const WEEKDAY_SHORT: Record<number, string> = {
+  1: "Mo",
+  2: "Di",
+  3: "Mi",
+  4: "Do",
+  5: "Fr",
+  6: "Sa",
+  7: "So",
+};
