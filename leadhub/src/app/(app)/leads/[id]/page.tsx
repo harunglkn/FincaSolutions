@@ -168,6 +168,7 @@ export default async function LeadDetailPage(
                 verkaeuferName={lead.verkaeufer_name}
                 initialMessages={messages}
                 sendMessageAction={sendMessage}
+                bookingUrl={bookingUrl}
               />
             </CardBody>
           </Card>

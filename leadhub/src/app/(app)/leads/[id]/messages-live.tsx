@@ -10,7 +10,19 @@ type Props = {
   verkaeuferName: string | null;
   initialMessages: LeadMessage[];
   sendMessageAction: (formData: FormData) => Promise<void>;
+  bookingUrl?: string | null;
 };
+
+function buildBookingMessage(bookingUrl: string): string {
+  return (
+    "Gerne, dann lassen Sie uns den Ankauf kurz abstimmen.\n\n" +
+    "Sie können hier direkt einen passenden Termin auswählen:\n\n" +
+    `${bookingUrl}\n\n` +
+    "Nach der Buchung sehen wir den Termin direkt im System und können " +
+    "den Ankauf verbindlich mit Ihnen besprechen.\n\n" +
+    "Viele Grüße"
+  );
+}
 
 const QUICK_REPLIES: string[] = [
   "Hallo, ist das Fahrzeug noch verfügbar?",
@@ -25,6 +37,7 @@ export function MessagesLive({
   verkaeuferName,
   initialMessages,
   sendMessageAction,
+  bookingUrl,
 }: Props) {
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [text, setText] = useState("");
@@ -131,6 +144,33 @@ export function MessagesLive({
       </div>
 
       <div className="border-t border-ink-100 pt-3">
+        {bookingUrl && (
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => {
+                setText(buildBookingMessage(bookingUrl));
+                setShowTemplates(false);
+                textareaRef.current?.focus();
+              }}
+              className="inline-flex items-center gap-2 h-9 px-3.5 rounded-lg border border-brand-200 bg-brand-50 text-sm font-medium text-brand-800 hover:bg-brand-100 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                <path
+                  d="M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Terminlink senden
+            </button>
+            <span className="ml-2 text-[11px] text-ink-400">
+              fügt die Termin-Einladung mit Buchungslink ein — dann nur noch „Senden"
+            </span>
+          </div>
+        )}
         {showTemplates && (
           <div className="mb-2 grid gap-1.5">
             <p className="text-xs font-medium text-ink-500 mb-1">
