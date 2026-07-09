@@ -169,6 +169,7 @@ export default async function LeadDetailPage(
                 initialMessages={messages}
                 sendMessageAction={sendMessage}
                 bookingUrl={bookingUrl}
+                ankaufspreis={lead.ankaufspreis}
               />
             </CardBody>
           </Card>

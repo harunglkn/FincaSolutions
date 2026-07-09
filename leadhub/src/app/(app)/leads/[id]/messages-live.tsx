@@ -11,6 +11,7 @@ type Props = {
   initialMessages: LeadMessage[];
   sendMessageAction: (formData: FormData) => Promise<void>;
   bookingUrl?: string | null;
+  ankaufspreis?: number | null;
 };
 
 function buildBookingMessage(bookingUrl: string): string {
@@ -22,6 +23,59 @@ function buildBookingMessage(bookingUrl: string): string {
     "den Ankauf verbindlich mit Ihnen besprechen.\n\n" +
     "Viele Grüße"
   );
+}
+
+// Haupt-Antwort: Richtpreis + Ablauf + Online-Terminbuchung + Kontakt.
+// Preis und Buchungslink werden automatisch pro Fahrzeug eingesetzt.
+function buildMainReplyTemplate(
+  bookingUrl: string,
+  ankaufspreis: number | null | undefined,
+): string {
+  const preis =
+    ankaufspreis != null && Number.isFinite(Number(ankaufspreis))
+      ? new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
+          Number(ankaufspreis),
+        )
+      : "[PREIS EINTRAGEN]";
+
+  return `Hallo und vielen Dank für Ihre Rückmeldung.
+
+Ihr Fahrzeug ist für uns grundsätzlich interessant. Auf Basis der Inseratsangaben können wir Ihnen vorab folgenden unverbindlichen Richtpreis nennen:
+
+Richtpreis: ${preis} €
+(gültig für 5 Tage)
+
+Der Preis basiert auf den aktuell bekannten Fahrzeugdaten, der Marktlage und der Nachfrage. Die endgültige Bewertung erfolgt bei uns vor Ort nach kurzer Sichtprüfung des Fahrzeugs.
+
+Wir sind eine feste Ankaufstation und prüfen Fahrzeuge direkt bei uns am Standort. Das hat für Sie den Vorteil, dass wir den Zustand gemeinsam transparent anschauen, offene Fragen direkt klären und bei Einigung die Abwicklung sofort durchführen können.
+
+So läuft der Ankauf bei uns ab:
+Sie kommen mit dem Fahrzeug zu uns, wir prüfen kurz Zustand, Ausstattung, Historie und Unterlagen. Wenn alles zu den Angaben passt, können wir den Ankauf direkt abschließen. Die Bezahlung erfolgt sicher und nachvollziehbar vor Ort — je nach Vereinbarung per Echtzeitüberweisung oder Banküberweisung. Selbstverständlich erhalten Sie einen ordentlichen Kaufvertrag und eine saubere Abwicklung.
+
+Für Sie bedeutet das:
+- keine langen Preisverhandlungen mit Privatkäufern
+- kein Risiko mit unseriösen Interessenten
+- schnelle Entscheidung vor Ort
+- sichere Bezahlung
+- professionelle Abwicklung durch einen Händler
+- auf Wunsch Unterstützung bei Abmeldung und Unterlagen
+
+Bitte bringen Sie zur Besichtigung nach Möglichkeit Fahrzeugschein, Fahrzeugbrief, Serviceunterlagen, beide Schlüssel und vorhandene Rechnungen mit.
+
+Ihren Wunschtermin zur Fahrzeugprüfung können Sie ganz bequem direkt online buchen:
+${bookingUrl}
+
+Alternativ erreichen Sie uns auch telefonisch oder per WhatsApp:
+Tel.: 0176 11199111
+Mo–Fr: 08:00–18:00 Uhr
+Sa: 08:00–13:00 Uhr
+
+A.G. Automobile eGbR
+Robert-Bosch-Straße 4
+64319 Pfungstadt
+
+Mit freundlichen Grüßen
+A.G. Automobile eGbR`;
 }
 
 const QUICK_REPLIES: string[] = [
@@ -38,6 +92,7 @@ export function MessagesLive({
   initialMessages,
   sendMessageAction,
   bookingUrl,
+  ankaufspreis,
 }: Props) {
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [text, setText] = useState("");
@@ -145,7 +200,26 @@ export function MessagesLive({
 
       <div className="border-t border-ink-100 pt-3">
         {bookingUrl && (
-          <div className="mb-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setText(buildMainReplyTemplate(bookingUrl, ankaufspreis));
+                setShowTemplates(false);
+                textareaRef.current?.focus();
+              }}
+              className="inline-flex items-center gap-2 h-9 px-3.5 rounded-lg bg-brand-700 text-sm font-medium text-white hover:bg-brand-800 transition-colors shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                <path
+                  d="m12 2 2.9 6.26L21 9.27l-4.5 4.38L17.8 20 12 16.77 6.2 20l1.3-6.35L3 9.27l6.1-1.01L12 2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Haupt-Antwort (Richtpreis + Termin)
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -164,10 +238,10 @@ export function MessagesLive({
                   strokeLinejoin="round"
                 />
               </svg>
-              Terminlink senden
+              Nur Terminlink
             </button>
-            <span className="ml-2 text-[11px] text-ink-400">
-              fügt die Termin-Einladung mit Buchungslink ein — dann nur noch „Senden"
+            <span className="text-[11px] text-ink-400">
+              Preis + Buchungslink werden automatisch eingesetzt — prüfen, dann „Senden"
             </span>
           </div>
         )}
