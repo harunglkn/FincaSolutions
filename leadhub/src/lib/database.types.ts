@@ -24,6 +24,8 @@ export type Profile = {
   nachname: string | null;
   telefon: string | null;
   adresse: string | null;
+  // Auto-Antwort mit Buchungslink bei erster Verkaeufer-Antwort (v10)
+  auto_reply_enabled: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -73,6 +75,13 @@ export type Lead = {
 
   // mobile.de Konversations-ID (gelernt beim ersten Antwort-Sync)
   conversation_id: string | null;
+
+  // Termin-Kalender (v8) + Auto-Antwort (v10)
+  appointment_id: string | null;
+  next_appointment_at: string | null;
+  appointment_status: string | null;
+  last_activity_at: string | null;
+  auto_reply_sent_at: string | null;
 
   created_at: string;
   updated_at: string;
