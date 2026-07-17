@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/impressum", "/datenschutz"];
 // Praefixe, die ohne Login erreichbar sind (z.B. oeffentliche Buchungsseite).
-const PUBLIC_PREFIXES = ["/booking"];
+const PUBLIC_PREFIXES = ["/booking", "/termin"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

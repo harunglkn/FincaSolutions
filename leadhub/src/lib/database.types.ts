@@ -83,6 +83,10 @@ export type Lead = {
   last_activity_at: string | null;
   auto_reply_sent_at: string | null;
 
+  // Kurz-Buchungstoken + Notizen (v11)
+  booking_token: string | null;
+  notes: string | null;
+
   created_at: string;
   updated_at: string;
 };

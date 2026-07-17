@@ -51,6 +51,7 @@ export function BookingForm({ leadId }: { leadId: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [plate, setPlate] = useState("");
   const [note, setNote] = useState("");
 
   const [selectedDay, setSelectedDay] = useState(days[0].iso);
@@ -104,6 +105,7 @@ export function BookingForm({ leadId }: { leadId: string }) {
         p_date: selectedDay,
         p_time: selectedTime,
         p_note: note.trim() || null,
+        p_vehicle_plate: plate.trim() || null,
       },
     );
     setSubmitting(false);
@@ -183,6 +185,12 @@ export function BookingForm({ leadId }: { leadId: string }) {
           onChange={setEmail}
           type="email"
           placeholder="name@beispiel.de"
+        />
+        <Input
+          label="Kennzeichen (optional)"
+          value={plate}
+          onChange={setPlate}
+          placeholder="z. B. DA-AB 123"
         />
       </div>
 
