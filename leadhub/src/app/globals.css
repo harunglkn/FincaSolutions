@@ -27,6 +27,12 @@
   --color-ink-900: #0f172a;
   --color-ink-950: #020617;
 
+  /* Akzent: Tuerkis aus dem FS-Logo */
+  --color-accent-300: #67dceb;
+  --color-accent-400: #35c6d9;
+  --color-accent-500: #18b2c6;
+  --color-accent-600: #0e8fa1;
+
   /* Status-Farben */
   --color-success: #16a34a;
   --color-warning: #d97706;

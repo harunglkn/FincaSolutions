@@ -15,29 +15,30 @@ function initialsFromEmail(email: string | null) {
 
 export function Sidebar({ firma, email, unread, todayAppointments }: NavData) {
   return (
-    <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
-      <div className="h-16 px-5 flex items-center border-b border-ink-100">
-        <Logo />
+    <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-gradient-to-b from-ink-900 to-ink-950 h-screen sticky top-0">
+      <div className="h-16 px-5 flex items-center border-b border-white/10">
+        <Logo variant="light" />
       </div>
       <nav className="flex-1 px-3 py-5 space-y-1">
-        <p className="px-3 text-[11px] uppercase tracking-widest font-semibold text-ink-400 mb-2">
+        <p className="px-3 text-[11px] uppercase tracking-widest font-semibold text-ink-500 mb-2">
           Arbeitsbereich
         </p>
         {mainNav.map((item) => (
           <NavLink
             key={item.href}
             {...item}
+            appearance="dark"
             badge={badgeFor(item.href, { unread, todayAppointments })}
           />
         ))}
       </nav>
-      <div className="px-4 py-4 border-t border-ink-100">
+      <div className="px-4 py-4 border-t border-white/10">
         <div className="flex items-center gap-3">
-          <div className="grid place-items-center h-9 w-9 rounded-full bg-brand-100 text-brand-800 font-semibold text-sm">
+          <div className="grid place-items-center h-9 w-9 rounded-full bg-white/10 text-accent-300 font-semibold text-sm">
             {initialsFromEmail(email)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-ink-900 truncate">
+            <p className="text-sm font-semibold text-white truncate">
               {firma ?? email ?? "Gast"}
             </p>
             <p className="text-xs text-ink-500 truncate">

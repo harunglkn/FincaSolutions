@@ -17,11 +17,15 @@ export function StatCard({ label, value, hint, trend, icon }: StatCardProps) {
       : "text-ink-500";
 
   return (
-    <div className="bg-white border border-ink-200 rounded-xl p-5 shadow-sm">
+    <div className="relative overflow-hidden bg-white border border-ink-200/70 rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-16px_rgba(15,23,42,0.10)] transition-shadow hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_16px_40px_-16px_rgba(15,23,42,0.16)]">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-600 via-accent-500 to-transparent opacity-60"
+      />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-ink-500">{label}</p>
-          <p className="mt-2 text-3xl font-semibold text-ink-900 tracking-tight">
+          <p className="text-[13px] font-medium text-ink-500">{label}</p>
+          <p className="mt-2 text-[32px] leading-none font-semibold text-ink-900 tracking-tight tabular-nums">
             {value}
           </p>
         </div>

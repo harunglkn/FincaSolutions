@@ -70,14 +70,14 @@ export function MobileNav({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-white shadow-xl flex flex-col">
-            <div className="h-14 px-4 flex items-center justify-between border-b border-ink-100">
-              <Logo />
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-gradient-to-b from-ink-900 to-ink-950 shadow-xl flex flex-col">
+            <div className="h-14 px-4 flex items-center justify-between border-b border-white/10">
+              <Logo variant="light" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Menü schließen"
-                className="grid place-items-center h-9 w-9 rounded-lg text-ink-500 hover:bg-ink-100"
+                className="grid place-items-center h-9 w-9 rounded-lg text-ink-400 hover:bg-white/10"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
                   <path
@@ -102,11 +102,11 @@ export function MobileNav({
                     className={[
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                       active
-                        ? "bg-brand-50 text-brand-800"
-                        : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
+                        ? "bg-white/10 text-white"
+                        : "text-ink-400 hover:bg-white/5 hover:text-white",
                     ].join(" ")}
                   >
-                    <span className={active ? "text-brand-700" : "text-ink-400"}>
+                    <span className={active ? "text-accent-400" : "text-ink-500"}>
                       {item.icon}
                     </span>
                     <span className="flex-1">{item.label}</span>
@@ -121,7 +121,7 @@ export function MobileNav({
             </nav>
 
             {firma && (
-              <div className="px-4 py-4 border-t border-ink-100 text-sm font-semibold text-ink-900 truncate">
+              <div className="px-4 py-4 border-t border-white/10 text-sm font-semibold text-white truncate">
                 {firma}
               </div>
             )}
