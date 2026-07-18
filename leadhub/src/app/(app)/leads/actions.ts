@@ -136,6 +136,20 @@ export async function seedDemoData() {
   revalidatePath("/", "layout");
 }
 
+export async function saveLeadNotes(
+  leadId: string,
+  notes: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("leads")
+    .update({ notes: notes.trim() || null })
+    .eq("id", leadId);
+  if (error) return { ok: false, error: "Speichern fehlgeschlagen." };
+  revalidatePath(`/leads/${leadId}`);
+  return { ok: true };
+}
+
 export async function markLeadRead(leadId: string) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("mark_lead_read", { p_lead_id: leadId });

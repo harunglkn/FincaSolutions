@@ -11,12 +11,14 @@ import {
   type Lead,
   type LeadMessage,
   type Appointment,
+  type LeadActivity,
 } from "@/lib/database.types";
 import { formatEuro, formatKm, formatRelative } from "@/lib/format";
 import { sendMessage, markLeadRead } from "../actions";
 import { StatusSelector } from "./status-selector";
 import { MessagesLive } from "./messages-live";
 import { AppointmentPanel } from "./appointment-panel";
+import { NotesCard } from "./notes-card";
 import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
 export default async function LeadDetailPage(
@@ -57,12 +59,21 @@ export default async function LeadDetailPage(
     await supabase.rpc("mark_lead_read", { p_lead_id: lead.id });
   }
 
-  // Termine dieses Leads laden; den relevanten (naechster aktiver, sonst letzter) waehlen.
-  const { data: apptData } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("lead_id", id)
-    .order("appointment_datetime", { ascending: false });
+  // Termine + Aktivitaeten dieses Leads laden.
+  const [{ data: apptData }, { data: activityData }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("*")
+      .eq("lead_id", id)
+      .order("appointment_datetime", { ascending: false }),
+    supabase
+      .from("lead_activities")
+      .select("*")
+      .eq("lead_id", id)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+  const activities = (activityData ?? []) as LeadActivity[];
   const appointments = (apptData ?? []) as Appointment[];
   const nowMs = Date.now();
   const primaryAppointment =
@@ -187,6 +198,43 @@ export default async function LeadDetailPage(
                 sellerName={lead.verkaeufer_name}
                 appointment={primaryAppointment}
               />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notizen</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <NotesCard leadId={lead.id} initialNotes={lead.notes} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Verlauf</CardTitle>
+            </CardHeader>
+            <CardBody>
+              {activities.length === 0 ? (
+                <p className="text-sm text-ink-500">
+                  Noch keine Einträge — Aktionen wie Terminbuchungen erscheinen
+                  hier automatisch.
+                </p>
+              ) : (
+                <ol className="space-y-3">
+                  {activities.map((a) => (
+                    <li key={a.id} className="flex gap-3 text-sm">
+                      <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-ink-900">{a.message}</p>
+                        <p className="text-xs text-ink-400">
+                          {formatRelative(a.created_at)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </CardBody>
           </Card>
 
