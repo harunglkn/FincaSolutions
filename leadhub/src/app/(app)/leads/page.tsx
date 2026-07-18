@@ -12,7 +12,7 @@ import {
   type Lead,
   type LeadStatus,
 } from "@/lib/database.types";
-import { formatEuro, formatKm } from "@/lib/format";
+import { formatEuro, formatKm, formatRelative } from "@/lib/format";
 import { NewLeadButton } from "./new-lead-button";
 import { LeadsFilterBar } from "./leads-filter-bar";
 import { CheapestBadge } from "@/components/ui/cheapest-badge";
@@ -160,7 +160,9 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                         <Th>Fahrzeug</Th>
                         <Th>Verkäufer</Th>
                         <Th>Angebot</Th>
-                        <Th>Ankaufspreis</Th>
+                        <Th>Richtpreis</Th>
+                        <Th>Termin</Th>
+                        <Th>Aktivität</Th>
                         <Th>Status</Th>
                         <Th></Th>
                       </tr>
@@ -215,6 +217,65 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
                           </Td>
                           <Td className="font-semibold text-brand-800">
                             {formatEuro(lead.ankaufspreis)}
+                          </Td>
+                          <Td>
+                            {lead.next_appointment_at &&
+                            new Date(lead.next_appointment_at).getTime() >=
+                              Date.now() ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-xs font-medium text-green-800 whitespace-nowrap">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden
+                                >
+                                  <path
+                                    d="M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                                {new Date(
+                                  lead.next_appointment_at,
+                                ).toLocaleString("de-DE", {
+                                  timeZone: "Europe/Berlin",
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            ) : (
+                              <span className="text-ink-300">—</span>
+                            )}
+                          </Td>
+                          <Td>
+                            <div className="flex items-center gap-1.5 text-xs text-ink-500 whitespace-nowrap">
+                              {formatRelative(
+                                lead.last_activity_at ??
+                                  lead.last_seller_message_at ??
+                                  lead.updated_at,
+                              )}
+                              {lead.notes && (
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  className="h-3.5 w-3.5 text-ink-400"
+                                  aria-hidden
+                                >
+                                  <title>Notiz vorhanden</title>
+                                  <path
+                                    d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.4 2.6a2 2 0 0 1 2.8 2.8L13 13.6 9 14.6l1-4L18.4 2.6Z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
                           </Td>
                           <Td>
                             <Badge tone={LEAD_STATUS_TONE[lead.status]}>
