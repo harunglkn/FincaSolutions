@@ -23,9 +23,18 @@ function startOfToday(): string {
   return d.toISOString();
 }
 
+// Bot heartbeat kommt alle ~60s, Watcher alle ~35s — nach 5 Minuten Stille
+// gilt der Dienst als inaktiv.
+const WORKER_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+
+type Heartbeat = { worker: string; last_seen_at: string };
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const todayIso = startOfToday();
+  const berlinToday = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Berlin",
+  });
 
   const [
     leadsTodayResult,
@@ -35,6 +44,9 @@ export default async function DashboardPage() {
     allLeadsResult,
     botLeadsTodayResult,
     unreadResult,
+    appointmentsTodayResult,
+    failedResult,
+    heartbeatResult,
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -69,6 +81,17 @@ export default async function DashboardPage() {
       .eq("has_unread_seller_message", true)
       .order("last_seller_message_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("appointment_date", berlinToday)
+      .in("status", ["booked", "confirmed"]),
+    supabase
+      .from("lead_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("von", "haendler")
+      .eq("delivery_status", "failed"),
+    supabase.from("worker_heartbeats").select("worker, last_seen_at"),
   ]);
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
@@ -79,6 +102,22 @@ export default async function DashboardPage() {
   const botLeadsToday = botLeadsTodayResult.data ?? [];
   const unreadLeads = unreadResult.data ?? [];
   const unreadCount = unreadResult.count ?? unreadLeads.length;
+  const termineHeute = appointmentsTodayResult.count ?? 0;
+  const failedCount = failedResult.count ?? 0;
+
+  const heartbeats = (heartbeatResult.data ?? []) as Heartbeat[];
+  const nowMs = Date.now();
+  function workerStatus(name: string) {
+    const hb = heartbeats.find((h) => h.worker === name);
+    if (!hb) return { active: false, lastSeen: null as string | null };
+    return {
+      active:
+        nowMs - new Date(hb.last_seen_at).getTime() < WORKER_ACTIVE_WINDOW_MS,
+      lastSeen: hb.last_seen_at as string | null,
+    };
+  }
+  const botStatus = workerStatus("bot");
+  const watcherStatus = workerStatus("watcher");
 
   // Tagesbericht-Zahlen
   const tagesbericht = {
@@ -100,6 +139,30 @@ export default async function DashboardPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-6">
+        {/* System-Status: laufen Suchlauf und Antwort-Waechter gerade? */}
+        <section className="flex flex-wrap items-center gap-2">
+          <StatusChip
+            label="Suchlauf"
+            active={botStatus.active}
+            lastSeen={botStatus.lastSeen}
+          />
+          <StatusChip
+            label="Antwort-Wächter"
+            active={watcherStatus.active}
+            lastSeen={watcherStatus.lastSeen}
+          />
+          {failedCount > 0 && (
+            <span className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-red-200 bg-red-50 text-xs font-medium text-red-800">
+              <span className="h-2 w-2 rounded-full bg-red-500" />
+              {failedCount}{" "}
+              {failedCount === 1
+                ? "Nachricht fehlgeschlagen"
+                : "Nachrichten fehlgeschlagen"}
+              <span className="opacity-70">· im Lead-Chat markiert</span>
+            </span>
+          )}
+        </section>
+
         {unreadLeads.length > 0 && (
           <Card className="border-amber-300 bg-gradient-to-br from-amber-50 to-white">
             <CardHeader className="flex items-center justify-between border-b-amber-200">
@@ -192,14 +255,10 @@ export default async function DashboardPage() {
           <StatCard
             label="Verkäufer-Antworten"
             value={unreadCount}
-            hint={unreadCount === 1 ? "unbeantwortet" : "unbeantwortet"}
+            hint="unbeantwortet"
           />
+          <StatCard label="Termine heute" value={termineHeute} hint="im Kalender" />
           <StatCard label="Offene Anfragen" value={offeneAntworten} />
-          <StatCard
-            label="Aktive Kampagnen"
-            value={kampagnenAktiv}
-            hint="Suchläufe"
-          />
         </section>
 
         {botLeadsToday.length > 0 && (
@@ -321,6 +380,41 @@ export default async function DashboardPage() {
         </section>
       </div>
     </>
+  );
+}
+
+function StatusChip({
+  label,
+  active,
+  lastSeen,
+}: {
+  label: string;
+  active: boolean;
+  lastSeen: string | null;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 h-8 px-3 rounded-full border text-xs font-medium ${
+        active
+          ? "border-green-200 bg-green-50 text-green-800"
+          : "border-ink-200 bg-white text-ink-500"
+      }`}
+    >
+      <span className="relative flex h-2 w-2">
+        {active && (
+          <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+        )}
+        <span
+          className={`relative inline-flex h-2 w-2 rounded-full ${
+            active ? "bg-green-500" : "bg-ink-300"
+          }`}
+        />
+      </span>
+      {label}: {active ? "aktiv" : "inaktiv"}
+      {lastSeen && (
+        <span className="opacity-70">· {formatRelative(lastSeen)}</span>
+      )}
+    </span>
   );
 }
 

@@ -1,62 +1,9 @@
 import { Logo } from "@/components/brand/logo";
 import { NavLink } from "@/components/layout/nav-link";
-import { createClient } from "@/lib/supabase/server";
+import { mainNav, badgeFor } from "@/components/layout/nav-items";
+import type { NavData } from "@/components/layout/nav-data";
 
-const Icon = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
-    <path
-      d={d}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const mainNav = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: <Icon d="M3 12 12 4l9 8M5 10v10h14V10" />,
-  },
-  {
-    label: "Posteingang",
-    href: "/posteingang",
-    icon: <Icon d="M3 8l9 6 9-6M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z" />,
-  },
-  {
-    label: "Leads",
-    href: "/leads",
-    icon: <Icon d="M4 6h16M4 12h16M4 18h10" />,
-  },
-  {
-    label: "Termine",
-    href: "/termine",
-    icon: (
-      <Icon d="M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-    ),
-  },
-  {
-    label: "Kampagnen",
-    href: "/kampagnen",
-    icon: <Icon d="M3 11l18-7-7 18-3-8-8-3Z" />,
-  },
-  {
-    label: "Berichte",
-    href: "/berichte",
-    icon: <Icon d="M4 19V5m6 14V9m6 10v-6m4 6H4" />,
-  },
-  {
-    label: "Einstellungen",
-    href: "/einstellungen",
-    icon: (
-      <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-3a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2L5.1 6 3.1 9.3l2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z" />
-    ),
-  },
-];
-
-function initialsFromEmail(email: string | undefined) {
+function initialsFromEmail(email: string | null) {
   if (!email) return "··";
   const local = email.split("@")[0];
   const parts = local.split(/[._-]/).filter(Boolean);
@@ -66,39 +13,7 @@ function initialsFromEmail(email: string | undefined) {
   return local.slice(0, 2).toUpperCase();
 }
 
-export async function Sidebar() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const email = user?.email;
-
-  const berlinToday = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Europe/Berlin",
-  });
-  const [{ data: profile }, { count: unreadCount }, { count: todayCount }] =
-    user
-      ? await Promise.all([
-          supabase
-            .from("profiles")
-            .select("firma")
-            .eq("id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("leads")
-            .select("id", { count: "exact", head: true })
-            .eq("has_unread_seller_message", true),
-          supabase
-            .from("appointments")
-            .select("id", { count: "exact", head: true })
-            .eq("appointment_date", berlinToday)
-            .in("status", ["booked", "confirmed"]),
-        ])
-      : [{ data: null }, { count: 0 }, { count: 0 }];
-  const firma = profile?.firma ?? null;
-  const unread = unreadCount ?? 0;
-  const todayAppointments = todayCount ?? 0;
-
+export function Sidebar({ firma, email, unread, todayAppointments }: NavData) {
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-ink-200 h-screen sticky top-0">
       <div className="h-16 px-5 flex items-center border-b border-ink-100">
@@ -112,13 +27,7 @@ export async function Sidebar() {
           <NavLink
             key={item.href}
             {...item}
-            badge={
-              item.href === "/posteingang"
-                ? unread
-                : item.href === "/termine"
-                  ? todayAppointments
-                  : undefined
-            }
+            badge={badgeFor(item.href, { unread, todayAppointments })}
           />
         ))}
       </nav>
