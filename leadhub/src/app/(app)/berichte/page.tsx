@@ -28,6 +28,20 @@ function dayLabel(d: Date): string {
   return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
+type ConvLead = {
+  id: string;
+  bot_meta: { template_variant?: string | null } | null;
+  last_seller_message_at: string | null;
+  appointment_id: string | null;
+  status: string;
+};
+
+function variantLabel(v: string): string {
+  const m = v.match(/^anrede(\d+)_text(\d+)$/);
+  if (m) return `Anrede ${m[1]} · Text ${m[2]}`;
+  return v;
+}
+
 export default async function BerichtePage() {
   const supabase = await createClient();
 
@@ -35,10 +49,46 @@ export default async function BerichtePage() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
-  const { data: leads } = await supabase
-    .from("leads")
-    .select("created_at, status, last_seller_message_at")
-    .gte("created_at", sevenDaysAgo.toISOString());
+  const [{ data: leads }, { data: convData }] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("created_at, status, last_seller_message_at")
+      .gte("created_at", sevenDaysAgo.toISOString()),
+    supabase
+      .from("leads")
+      .select("id, bot_meta, last_seller_message_at, appointment_id, status")
+      .limit(5000),
+  ]);
+
+  // ---- Erfolgs-Trichter + Textvarianten (Gesamtbestand) ----
+  const conv = (convData ?? []) as ConvLead[];
+  const totalAll = conv.length;
+  const replied = conv.filter((l) => l.last_seller_message_at).length;
+  const withTermin = conv.filter((l) => l.appointment_id).length;
+  const gekauft = conv.filter((l) => l.status === "abgeschlossen").length;
+  const pct = (n: number, d: number) =>
+    d > 0 ? `${Math.round((n / d) * 100)} %` : "—";
+
+  const variantStats = new Map<
+    string,
+    { sent: number; replies: number; termine: number }
+  >();
+  for (const l of conv) {
+    const v = l.bot_meta?.template_variant;
+    if (!v) continue;
+    const s = variantStats.get(v) ?? { sent: 0, replies: 0, termine: 0 };
+    s.sent += 1;
+    if (l.last_seller_message_at) s.replies += 1;
+    if (l.appointment_id) s.termine += 1;
+    variantStats.set(v, s);
+  }
+  const variants = [...variantStats.entries()]
+    .map(([name, s]) => ({
+      name,
+      ...s,
+      rate: s.sent > 0 ? s.replies / s.sent : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate || b.sent - a.sent);
 
   const buckets: DayBucket[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -97,6 +147,85 @@ export default async function BerichtePage() {
             label="Diese Woche · Antworten"
             value={wocheAntworten}
           />
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Erfolgs-Trichter · gesamt</CardTitle>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <FunnelRow
+                label="Anfragen gesendet"
+                value={totalAll}
+                share={100}
+                hint="100 %"
+              />
+              <FunnelRow
+                label="Antworten erhalten"
+                value={replied}
+                share={totalAll > 0 ? (replied / totalAll) * 100 : 0}
+                hint={`${pct(replied, totalAll)} Antwortquote`}
+              />
+              <FunnelRow
+                label="Termine gebucht"
+                value={withTermin}
+                share={totalAll > 0 ? (withTermin / totalAll) * 100 : 0}
+                hint={`${pct(withTermin, totalAll)} aller Anfragen · ${pct(withTermin, replied)} der Antworten`}
+              />
+              <FunnelRow
+                label="Abgeschlossen / gekauft"
+                value={gekauft}
+                share={totalAll > 0 ? (gekauft / totalAll) * 100 : 0}
+                hint={`${pct(gekauft, totalAll)} aller Anfragen`}
+                emphasis
+              />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Beste Textvarianten</CardTitle>
+            </CardHeader>
+            <CardBody className="!p-0">
+              {variants.length === 0 ? (
+                <p className="px-6 py-8 text-sm text-ink-500">
+                  Noch keine Daten — die verwendete Textvariante wird seit dem
+                  18.07.2026 pro Anfrage erfasst. Nach den nächsten Suchläufen
+                  siehst du hier, welche Formulierung die meisten Antworten
+                  bringt.
+                </p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-ink-50 text-left text-xs uppercase tracking-wider text-ink-500">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Variante</th>
+                      <th className="px-4 py-3 font-semibold">Gesendet</th>
+                      <th className="px-4 py-3 font-semibold">Antworten</th>
+                      <th className="px-4 py-3 font-semibold">Quote</th>
+                      <th className="px-4 py-3 font-semibold">Termine</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {variants.map((v, i) => (
+                      <tr key={v.name} className="hover:bg-ink-50/60">
+                        <td className="px-4 py-3 font-medium text-ink-900">
+                          {i === 0 && v.replies > 0 && "🏆 "}
+                          {variantLabel(v.name)}
+                        </td>
+                        <td className="px-4 py-3 text-ink-900">{v.sent}</td>
+                        <td className="px-4 py-3 text-ink-900">{v.replies}</td>
+                        <td className="px-4 py-3 font-semibold text-brand-800">
+                          {pct(v.replies, v.sent)}
+                        </td>
+                        <td className="px-4 py-3 text-ink-900">{v.termine}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </CardBody>
+          </Card>
         </section>
 
         <Card>
@@ -166,5 +295,45 @@ export default async function BerichtePage() {
         </Card>
       </div>
     </>
+  );
+}
+
+function FunnelRow({
+  label,
+  value,
+  share,
+  hint,
+  emphasis,
+}: {
+  label: string;
+  value: number;
+  share: number;
+  hint: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3 mb-1.5">
+        <span className="text-sm font-medium text-ink-700">{label}</span>
+        <span
+          className={`text-sm font-semibold tabular-nums ${
+            emphasis ? "text-brand-700" : "text-ink-900"
+          }`}
+        >
+          {value}
+        </span>
+      </div>
+      <div className="h-2.5 w-full rounded-full bg-ink-100 overflow-hidden">
+        <div
+          className={`h-full rounded-full ${
+            emphasis
+              ? "bg-gradient-to-r from-accent-500 to-brand-600"
+              : "bg-gradient-to-r from-brand-600 to-brand-500"
+          }`}
+          style={{ width: `${Math.max(share, value > 0 ? 3 : 0)}%` }}
+        />
+      </div>
+      <p className="mt-1 text-xs text-ink-500">{hint}</p>
+    </div>
   );
 }
