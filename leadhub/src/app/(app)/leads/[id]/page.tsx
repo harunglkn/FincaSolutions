@@ -92,7 +92,10 @@ export default async function LeadDetailPage(
     null;
   const appBaseUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://fincasolutions.vercel.app";
-  const bookingUrl = `${appBaseUrl}/booking/lead/${lead.id}`;
+  // Kurzlink bevorzugen (mobile.de-tauglich, kurz); Fallback auf Lang-URL.
+  const bookingUrl = lead.booking_token
+    ? `${appBaseUrl}/termin/${lead.booking_token}`
+    : `${appBaseUrl}/booking/lead/${lead.id}`;
 
   const marge =
     lead.marktwert !== null && lead.ankaufspreis !== null
