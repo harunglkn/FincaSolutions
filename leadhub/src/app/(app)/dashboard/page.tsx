@@ -4,6 +4,10 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
+import {
+  GettingStarted,
+  type OnboardingStep,
+} from "@/components/onboarding/getting-started";
 import { createClient } from "@/lib/supabase/server";
 import {
   LEAD_STATUS_LABEL,
@@ -47,6 +51,9 @@ export default async function DashboardPage() {
     appointmentsTodayResult,
     failedResult,
     heartbeatResult,
+    profileResult,
+    availabilityCountResult,
+    searchCountResult,
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -92,6 +99,14 @@ export default async function DashboardPage() {
       .eq("von", "haendler")
       .eq("delivery_status", "failed"),
     supabase.from("worker_heartbeats").select("worker, last_seen_at"),
+    supabase.from("profiles").select("firma, telefon, adresse").maybeSingle(),
+    supabase
+      .from("dealer_availability")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabase
+      .from("search_profiles")
+      .select("id", { count: "exact", head: true }),
   ]);
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
@@ -119,6 +134,47 @@ export default async function DashboardPage() {
   const botStatus = workerStatus("bot");
   const watcherStatus = workerStatus("watcher");
 
+  // "Erste Schritte" — Einrichtungs-Fortschritt des Haendlers
+  const profile = profileResult.data as {
+    firma: string | null;
+    telefon: string | null;
+    adresse: string | null;
+  } | null;
+  const onboardingSteps: OnboardingStep[] = [
+    {
+      key: "firma",
+      done: !!(profile?.firma && profile?.telefon && profile?.adresse),
+      title: "Autohaus-Daten vervollständigen",
+      desc: "Name, Telefon und Adresse — erscheinen auf Ihrer Termin-Buchungsseite.",
+      href: "/einstellungen",
+      cta: "Ausfüllen",
+    },
+    {
+      key: "verfuegbarkeit",
+      done: (availabilityCountResult.count ?? 0) > 0,
+      title: "Termin-Zeiten festlegen",
+      desc: "An welchen Tagen und Uhrzeiten können Verkäufer einen Termin buchen?",
+      href: "/einstellungen",
+      cta: "Zeiten setzen",
+    },
+    {
+      key: "suchlauf",
+      done: (searchCountResult.count ?? 0) > 0,
+      title: "Ersten Suchlauf anlegen",
+      desc: "Ihre mobile.de-Suche eintragen, nach der automatisch angefragt wird.",
+      href: "/suchlauf",
+      cta: "Anlegen",
+    },
+    {
+      key: "motor",
+      done: heartbeats.some((h) => h.worker === "bot"),
+      title: "Suchlauf-Motor verbinden",
+      desc: "Das Finca-Programm auf dem PC starten, damit Anfragen rausgehen.",
+      href: "/suchlauf",
+      cta: "Anleitung",
+    },
+  ];
+
   // Tagesbericht-Zahlen
   const tagesbericht = {
     anfragen: anfragenHeute,
@@ -127,8 +183,6 @@ export default async function DashboardPage() {
     potenzial: allLeads.filter((l) => l.status === "hohes_potenzial").length,
     abgeschlossen: allLeads.filter((l) => l.status === "abgeschlossen").length,
   };
-
-  const isEmpty = allLeads.length === 0 && kampagnenAktiv === 0;
 
   return (
     <>
@@ -230,25 +284,7 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        {isEmpty && (
-          <Card>
-            <CardBody className="py-10 text-center space-y-3">
-              <h2 className="text-lg font-semibold text-ink-900">
-                Willkommen bei Finca Solutions 👋
-              </h2>
-              <p className="text-sm text-ink-500 max-w-md mx-auto">
-                Legen Sie Ihre erste Kampagne an, um automatisch passende
-                Fahrzeuge zu finden — oder erfassen Sie direkt einen Lead.
-              </p>
-              <div className="flex justify-center gap-2 pt-2">
-                <LinkButton href="/kampagnen">Erste Kampagne</LinkButton>
-                <LinkButton href="/leads" variant="secondary">
-                  Zur Lead-Liste
-                </LinkButton>
-              </div>
-            </CardBody>
-          </Card>
-        )}
+        <GettingStarted steps={onboardingSteps} />
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard label="Neue Anfragen heute" value={anfragenHeute} />
