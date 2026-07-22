@@ -283,6 +283,18 @@ export const WEEKDAY_LABEL: Record<number, string> = {
   7: "Sonntag",
 };
 
+// Suchlauf-Profile (v13): im Dashboard verwaltete mobile.de-Suchen
+export type SearchProfile = {
+  id: string;
+  user_id: string;
+  name: string;
+  search_url: string;
+  is_active: boolean;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export const WEEKDAY_SHORT: Record<number, string> = {
   1: "Mo",
   2: "Di",

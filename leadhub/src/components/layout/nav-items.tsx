@@ -28,6 +28,11 @@ export const mainNav: NavItem[] = [
     icon: <Icon d="M3 12 12 4l9 8M5 10v10h14V10" />,
   },
   {
+    label: "Suchlauf",
+    href: "/suchlauf",
+    icon: <Icon d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12ZM20 20l-4.35-4.35" />,
+  },
+  {
     label: "Posteingang",
     href: "/posteingang",
     icon: (
