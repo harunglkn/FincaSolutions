@@ -266,10 +266,11 @@ export default async function DashboardPage() {
             <CardHeader className="flex items-center justify-between">
               <div>
                 <CardTitle>
-                  🤖 Bot-Aktivität heute · {botLeadsToday.length} Kontakte
+                  Suchlauf heute · {botLeadsToday.length}{" "}
+                  {botLeadsToday.length === 1 ? "Kontakt" : "Kontakte"}
                 </CardTitle>
                 <p className="mt-0.5 text-xs text-ink-500">
-                  Automatisch angeschriebene Fahrzeuge über Ihre Suchläufe
+                  Automatisch angeschriebene Fahrzeuge aus Ihren Suchläufen
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">

@@ -21,6 +21,16 @@ import { AppointmentPanel } from "./appointment-panel";
 import { NotesCard } from "./notes-card";
 import { CheapestBadge } from "@/components/ui/cheapest-badge";
 
+// Technische Confidence -> kundenfreundliche Marktlage
+const MARKET_QUALITY: Record<
+  string,
+  { label: string; tone: "success" | "brand" | "warning" }
+> = {
+  HIGH: { label: "sehr solide", tone: "success" },
+  MEDIUM: { label: "solide", tone: "brand" },
+  LOW: { label: "grobe Schätzung", tone: "warning" },
+};
+
 export default async function LeadDetailPage(
   props: PageProps<"/leads/[id]">,
 ) {
@@ -287,7 +297,7 @@ export default async function LeadDetailPage(
           {lead.bot_meta && (
             <Card>
               <CardHeader className="flex items-center justify-between">
-                <CardTitle>Bot-Auswertung</CardTitle>
+                <CardTitle>Marktvergleich</CardTitle>
                 {lead.bot_meta.comparison_url && (
                   <a
                     href={lead.bot_meta.comparison_url}
@@ -314,21 +324,26 @@ export default async function LeadDetailPage(
                 )}
               </CardHeader>
               <CardBody className="text-sm space-y-2">
-                {lead.bot_meta.pricing_mode && (
-                  <Field
-                    label="Preisfindung"
-                    value={lead.bot_meta.pricing_mode}
-                  />
-                )}
                 {lead.bot_meta.comparison_meta?.confidence && (
-                  <Field
-                    label="Confidence"
-                    value={String(lead.bot_meta.comparison_meta.confidence)}
-                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-ink-500">Marktlage</span>
+                    <Badge
+                      tone={
+                        MARKET_QUALITY[
+                          String(lead.bot_meta.comparison_meta.confidence)
+                        ]?.tone ?? "neutral"
+                      }
+                    >
+                      {MARKET_QUALITY[
+                        String(lead.bot_meta.comparison_meta.confidence)
+                      ]?.label ??
+                        String(lead.bot_meta.comparison_meta.confidence)}
+                    </Badge>
+                  </div>
                 )}
                 {lead.bot_meta.comparison_meta?.market_anchor_price != null && (
                   <Field
-                    label="Marktanker"
+                    label="Marktdurchschnitt"
                     value={formatEuro(
                       Number(lead.bot_meta.comparison_meta.market_anchor_price),
                     )}
@@ -336,7 +351,7 @@ export default async function LeadDetailPage(
                 )}
                 {lead.bot_meta.comparison_meta?.lowest_market_price != null && (
                   <Field
-                    label="Günstigster Markt"
+                    label="Günstigster Vergleich"
                     value={formatEuro(
                       Number(lead.bot_meta.comparison_meta.lowest_market_price),
                     )}
@@ -344,7 +359,7 @@ export default async function LeadDetailPage(
                 )}
                 {lead.bot_meta.comparison_meta?.private_price_count != null && (
                   <Field
-                    label="Privatanzeigen"
+                    label="Privatangebote"
                     value={String(
                       lead.bot_meta.comparison_meta.private_price_count,
                     )}
@@ -352,7 +367,7 @@ export default async function LeadDetailPage(
                 )}
                 {lead.bot_meta.comparison_meta?.dealer_price_count != null && (
                   <Field
-                    label="Händleranzeigen"
+                    label="Händlerangebote"
                     value={String(
                       lead.bot_meta.comparison_meta.dealer_price_count,
                     )}
@@ -361,7 +376,7 @@ export default async function LeadDetailPage(
                 {Array.isArray(lead.bot_meta.comparison_prices_used) &&
                   lead.bot_meta.comparison_prices_used.length > 0 && (
                     <div className="pt-2">
-                      <p className="text-ink-500 mb-1">Vergleichspreise</p>
+                      <p className="text-ink-500 mb-1">Vergleichspreise am Markt</p>
                       <div className="flex flex-wrap gap-1">
                         {lead.bot_meta.comparison_prices_used.map((p, i) => (
                           <span
