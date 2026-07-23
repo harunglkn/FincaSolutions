@@ -10,7 +10,6 @@ import {
   LEAD_STATUS_TONE,
   isCheapestInMarket,
   type Lead,
-  type LeadMessage,
 } from "@/lib/database.types";
 import { formatEuro, formatRelative } from "@/lib/format";
 

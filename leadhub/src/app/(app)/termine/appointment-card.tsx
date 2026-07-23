@@ -80,7 +80,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
       </div>
 
       {a.note && (
-        <p className="text-sm text-ink-500 italic">„{a.note}"</p>
+        <p className="text-sm text-ink-500 italic">„{a.note}“</p>
       )}
 
       {/* Kontakt-/Navigations-Buttons */}

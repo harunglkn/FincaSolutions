@@ -143,7 +143,7 @@ export function MessagesLive({
     }
   }
 
-  function useTemplate(t: string) {
+  function applyTemplate(t: string) {
     setText(t);
     setShowTemplates(false);
     textareaRef.current?.focus();
@@ -241,7 +241,7 @@ export function MessagesLive({
               Nur Terminlink
             </button>
             <span className="text-[11px] text-ink-400">
-              Preis + Buchungslink werden automatisch eingesetzt — prüfen, dann „Senden"
+              Preis + Buchungslink werden automatisch eingesetzt — prüfen, dann „Senden“
             </span>
           </div>
         )}
@@ -254,7 +254,7 @@ export function MessagesLive({
               <button
                 key={i}
                 type="button"
-                onClick={() => useTemplate(q)}
+                onClick={() => applyTemplate(q)}
                 className="text-left text-sm px-3 py-2 rounded-lg border border-ink-200 hover:border-brand-400 hover:bg-brand-50/50 text-ink-700"
               >
                 {q}

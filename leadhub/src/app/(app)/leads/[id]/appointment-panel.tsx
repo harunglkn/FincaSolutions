@@ -135,7 +135,7 @@ export function AppointmentPanel({
               </a>
             )}
             {appointment.note && (
-              <div className="text-ink-500 italic">„{appointment.note}"</div>
+              <div className="text-ink-500 italic">„{appointment.note}“</div>
             )}
           </div>
 

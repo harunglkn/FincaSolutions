@@ -14,7 +14,7 @@ import {
   type LeadActivity,
 } from "@/lib/database.types";
 import { formatEuro, formatKm, formatRelative } from "@/lib/format";
-import { sendMessage, markLeadRead } from "../actions";
+import { sendMessage } from "../actions";
 import { StatusSelector } from "./status-selector";
 import { MessagesLive } from "./messages-live";
 import { AppointmentPanel } from "./appointment-panel";
@@ -37,14 +37,13 @@ export default async function LeadDetailPage(
   const { id } = await props.params;
   const supabase = await createClient();
 
-  const [leadResult, messagesResult, campaignResult] = await Promise.all([
+  const [leadResult, messagesResult] = await Promise.all([
     supabase.from("leads").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("lead_messages")
       .select("*")
       .eq("lead_id", id)
       .order("created_at", { ascending: true }),
-    Promise.resolve(null),
   ]);
 
   const lead = leadResult.data as Lead | null;
