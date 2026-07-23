@@ -49,18 +49,44 @@
 }
 
 :root {
-  --background: #f8fafc;
+  --background: #f6f8fc;
   --foreground: #0f172a;
   --surface: #ffffff;
   --border: #e2e8f0;
 }
 
 html, body {
-  background: var(--background);
+  /* Dezente Tiefe: zwei sehr zarte Marken-/Akzent-Schimmer in den Ecken,
+     fest verankert (scrollen nicht mit) — wirkt hochwertiger als flaches Grau. */
+  background:
+    radial-gradient(1100px 520px at 100% -8%, rgba(53, 198, 217, 0.06), transparent 60%),
+    radial-gradient(900px 480px at -8% -4%, rgba(37, 71, 224, 0.05), transparent 55%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Feine, dezente Bildlaufleisten (Premium-Detail) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-300) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-ink-300);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ink-400);
 }
 
 /* Sanfter Fokus-Ring fuer Tastatur-Bedienung */
