@@ -17,7 +17,7 @@ export function Sidebar({ firma, email, unread, todayAppointments }: NavData) {
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-gradient-to-b from-ink-900 to-ink-950 h-screen sticky top-0">
       <div className="h-16 px-5 flex items-center border-b border-white/10">
-        <Logo variant="light" />
+        <Logo variant="light" href="/dashboard" />
       </div>
       <nav className="flex-1 px-3 py-5 space-y-1">
         <p className="px-3 text-[11px] uppercase tracking-widest font-semibold text-ink-500 mb-2">

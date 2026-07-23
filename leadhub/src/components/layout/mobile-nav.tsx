@@ -40,7 +40,7 @@ export function MobileNav({
   return (
     <>
       <header className="lg:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between bg-white border-b border-ink-200">
-        <Logo />
+        <Logo href="/dashboard" />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -72,7 +72,7 @@ export function MobileNav({
           />
           <div className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-gradient-to-b from-ink-900 to-ink-950 shadow-xl flex flex-col">
             <div className="h-14 px-4 flex items-center justify-between border-b border-white/10">
-              <Logo variant="light" />
+              <Logo variant="light" href="/dashboard" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

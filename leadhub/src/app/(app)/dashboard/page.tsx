@@ -286,7 +286,7 @@ export default async function DashboardPage() {
 
         <GettingStarted steps={onboardingSteps} />
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard label="Neue Anfragen heute" value={anfragenHeute} />
           <StatCard
             label="Verkäufer-Antworten"
@@ -294,7 +294,6 @@ export default async function DashboardPage() {
             hint="unbeantwortet"
           />
           <StatCard label="Termine heute" value={termineHeute} hint="im Kalender" />
-          <StatCard label="Offene Anfragen" value={offeneAntworten} />
         </section>
 
         {botLeadsToday.length > 0 && (
