@@ -295,6 +295,16 @@ export type SearchProfile = {
   updated_at: string;
 };
 
+export type Agent = {
+  id: string;
+  user_id: string;
+  label: string | null;
+  token_hash: string;
+  created_at: string;
+  last_seen_at: string | null;
+  revoked: boolean;
+};
+
 export const WEEKDAY_SHORT: Record<number, string> = {
   1: "Mo",
   2: "Di",

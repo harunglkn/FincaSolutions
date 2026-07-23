@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardBody } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
-import type { SearchProfile } from "@/lib/database.types";
+import type { SearchProfile, Agent } from "@/lib/database.types";
 import { SuchlaufManager } from "./suchlauf-manager";
+import { MotorConnect } from "./motor-connect";
 
 export const metadata: Metadata = { title: "Suchlauf" };
 
@@ -12,19 +13,26 @@ const MOTOR_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 export default async function SuchlaufPage() {
   const supabase = await createClient();
 
-  const [{ data: profilesData }, { data: hbData }] = await Promise.all([
-    supabase
-      .from("search_profiles")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("worker_heartbeats")
-      .select("last_seen_at")
-      .eq("worker", "bot")
-      .maybeSingle(),
-  ]);
+  const [{ data: profilesData }, { data: hbData }, { data: agentsData }] =
+    await Promise.all([
+      supabase
+        .from("search_profiles")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("worker_heartbeats")
+        .select("last_seen_at")
+        .eq("worker", "bot")
+        .maybeSingle(),
+      supabase
+        .from("agents")
+        .select("*")
+        .eq("revoked", false)
+        .order("created_at", { ascending: false }),
+    ]);
 
   const profiles = (profilesData ?? []) as SearchProfile[];
+  const agents = (agentsData ?? []) as Agent[];
   const motorActive =
     !!hbData?.last_seen_at &&
     Date.now() - new Date(hbData.last_seen_at).getTime() <
@@ -69,6 +77,8 @@ export default async function SuchlaufPage() {
             </div>
           </CardBody>
         </Card>
+
+        <MotorConnect agents={agents} />
 
         <SuchlaufManager profiles={profiles} />
       </div>

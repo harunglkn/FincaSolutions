@@ -81,6 +81,45 @@ export async function setSearchProfileActive(input: {
   return { ok: true };
 }
 
+export type PairingResult = { ok: boolean; code?: string; error?: string };
+
+export async function createPairingCode(): Promise<PairingResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Nicht angemeldet." };
+
+  const { data, error } = await supabase.rpc("create_pairing_code", {
+    p_label: null,
+  });
+  if (error || !data) {
+    return { ok: false, error: "Code konnte nicht erzeugt werden." };
+  }
+
+  revalidatePath("/suchlauf");
+  return { ok: true, code: String(data) };
+}
+
+export async function revokeAgent(id: string): Promise<SuchlaufResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Nicht angemeldet." };
+
+  // Trennen = als widerrufen markieren; der Token wird dadurch unbrauchbar.
+  const { error } = await supabase
+    .from("agents")
+    .update({ revoked: true })
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) return { ok: false, error: "Trennen fehlgeschlagen." };
+
+  revalidatePath("/suchlauf");
+  return { ok: true };
+}
+
 export async function deleteSearchProfile(id: string): Promise<SuchlaufResult> {
   const supabase = await createClient();
   const {
