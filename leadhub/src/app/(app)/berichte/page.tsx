@@ -137,15 +137,37 @@ export default async function BerichtePage() {
 
       <div className="p-6 lg:p-8 space-y-6">
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard label="Diese Woche · Anfragen" value={wocheAnfragen} />
-          <StatCard label="Diese Woche · Termine" value={wocheTermine} />
+          <StatCard
+            label="Diese Woche · Anfragen"
+            value={wocheAnfragen}
+            accent="brand"
+            icon={
+              <StatIcon d="M3 8l9 6 9-6M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z" />
+            }
+          />
+          <StatCard
+            label="Diese Woche · Termine"
+            value={wocheTermine}
+            accent="success"
+            icon={
+              <StatIcon d="M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+            }
+          />
           <StatCard
             label="Diese Woche · Abgeschlossen"
             value={wocheAbgeschlossen}
+            accent="amber"
+            icon={
+              <StatIcon d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            }
           />
           <StatCard
             label="Diese Woche · Antworten"
             value={wocheAntworten}
+            accent="accent"
+            icon={
+              <StatIcon d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
+            }
           />
         </section>
 
@@ -295,6 +317,20 @@ export default async function BerichtePage() {
         </Card>
       </div>
     </>
+  );
+}
+
+function StatIcon({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+      <path
+        d={d}
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
