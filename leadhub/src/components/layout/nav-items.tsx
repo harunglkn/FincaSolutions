@@ -52,11 +52,6 @@ export const mainNav: NavItem[] = [
     ),
   },
   {
-    label: "Kampagnen",
-    href: "/kampagnen",
-    icon: <Icon d="M3 11l18-7-7 18-3-8-8-3Z" />,
-  },
-  {
     label: "Berichte",
     href: "/berichte",
     icon: <Icon d="M4 19V5m6 14V9m6 10v-6m4 6H4" />,

@@ -43,7 +43,6 @@ export default async function DashboardPage() {
   const [
     leadsTodayResult,
     openResult,
-    campaignsActiveResult,
     recentLeadsResult,
     allLeadsResult,
     botLeadsTodayResult,
@@ -63,10 +62,6 @@ export default async function DashboardPage() {
       .from("leads")
       .select("id", { count: "exact", head: true })
       .eq("status", "antwort_offen"),
-    supabase
-      .from("campaigns")
-      .select("id", { count: "exact", head: true })
-      .eq("aktiv", true),
     supabase
       .from("leads")
       .select("*")
@@ -111,7 +106,6 @@ export default async function DashboardPage() {
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
   const offeneAntworten = openResult.count ?? 0;
-  const kampagnenAktiv = campaignsActiveResult.count ?? 0;
   const recentLeads = (recentLeadsResult.data ?? []) as Lead[];
   const allLeads = allLeadsResult.data ?? [];
   const botLeadsToday = botLeadsTodayResult.data ?? [];
@@ -405,7 +399,6 @@ export default async function DashboardPage() {
               <CardTitle>Tagesbericht</CardTitle>
             </CardHeader>
             <CardBody className="space-y-3 text-sm">
-              <Row label="Aktive Kampagnen" value={kampagnenAktiv} />
               <Row label="Anfragen heute" value={tagesbericht.anfragen} />
               <Row label="Offene Antworten" value={tagesbericht.offen} />
               <Row label="Mit Potenzial" value={tagesbericht.potenzial} />
