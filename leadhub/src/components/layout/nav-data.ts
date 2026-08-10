@@ -2,6 +2,7 @@
 // Seitenaufruf — genutzt vom (app)-Layout fuer Sidebar UND Handy-Menue.
 
 import { createClient } from "@/lib/supabase/server";
+import { classifyReply, needsAction } from "@/lib/reply-classify";
 
 export type NavData = {
   firma: string | null;
@@ -24,7 +25,7 @@ export async function getNavData(): Promise<NavData> {
     timeZone: "Europe/Berlin",
   });
 
-  const [{ data: profile }, { count: unreadCount }, { count: todayCount }] =
+  const [{ data: profile }, { data: unreadLeads }, { count: todayCount }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -33,8 +34,9 @@ export async function getNavData(): Promise<NavData> {
         .maybeSingle(),
       supabase
         .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("has_unread_seller_message", true),
+        .select("id")
+        .eq("has_unread_seller_message", true)
+        .limit(200),
       supabase
         .from("appointments")
         .select("id", { count: "exact", head: true })
@@ -42,10 +44,33 @@ export async function getNavData(): Promise<NavData> {
         .in("status", ["booked", "confirmed"]),
     ]);
 
+  // Die Zahl im Menue soll nur ECHTE Aufgaben zeigen. Klare Absagen
+  // ("kein Interesse", "schon verkauft") werden nicht mitgezaehlt — sonst
+  // steht dort dauerhaft eine hohe Zahl, die niemand abarbeiten muss.
+  let unread = 0;
+  const ids = (unreadLeads ?? []).map((l) => l.id as string);
+  if (ids.length > 0) {
+    const { data: msgs } = await supabase
+      .from("lead_messages")
+      .select("lead_id, text, created_at")
+      .in("lead_id", ids)
+      .eq("von", "verkaeufer")
+      .order("created_at", { ascending: false });
+
+    const latestByLead = new Map<string, string>();
+    for (const m of msgs ?? []) {
+      const lid = m.lead_id as string;
+      if (!latestByLead.has(lid)) latestByLead.set(lid, (m.text as string) ?? "");
+    }
+    unread = ids.filter((id) =>
+      needsAction(classifyReply(latestByLead.get(id) ?? null)),
+    ).length;
+  }
+
   return {
     firma: profile?.firma ?? null,
     email: user.email ?? null,
-    unread: unreadCount ?? 0,
+    unread,
     todayAppointments: todayCount ?? 0,
   };
 }

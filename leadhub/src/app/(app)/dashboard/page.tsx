@@ -162,8 +162,8 @@ export default async function DashboardPage() {
     {
       key: "motor",
       done: heartbeats.some((h) => h.worker === "bot"),
-      title: "Suchlauf-Motor verbinden",
-      desc: "Das Finca-Programm auf dem PC starten, damit Anfragen rausgehen.",
+      title: "Arbeitsplatz verbinden",
+      desc: "Finca auf dem Arbeitsplatz-Rechner starten, damit Anfragen rausgehen.",
       href: "/suchlauf",
       cta: "Anleitung",
     },

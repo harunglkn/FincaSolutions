@@ -63,15 +63,18 @@ export default async function SuchlaufPage() {
               </span>
               <div>
                 <p className="font-semibold text-ink-900">
-                  Suchlauf-Motor:{" "}
-                  {motorActive ? "verbunden" : "nicht verbunden"}
+                  {motorActive
+                    ? hasActive
+                      ? "Suchlauf läuft"
+                      : "Bereit"
+                    : "Arbeitsplatz nicht verbunden"}
                 </p>
                 <p className="text-sm text-ink-500">
                   {motorActive
                     ? hasActive
-                      ? "Ein Suchlauf ist aktiv — Fahrzeuge werden automatisch bearbeitet."
-                      : "Bereit. Starten Sie unten einen Suchlauf."
-                    : "Der Suchlauf-Motor auf dem PC ist gerade nicht aktiv. Starten Sie ihn am PC (oder richten Sie den Auto-Start ein)."}
+                      ? "Passende Fahrzeuge werden laufend erfasst und angefragt."
+                      : "Ihr Arbeitsplatz ist verbunden. Starten Sie unten einen Suchlauf."
+                    : "Ihr Arbeitsplatz meldet sich gerade nicht. Bitte prüfen Sie, ob der Rechner eingeschaltet ist."}
                 </p>
               </div>
             </div>

@@ -62,14 +62,14 @@ export function MotorConnect({ agents }: { agents: Agent[] }) {
   return (
     <div className="rounded-xl border border-ink-200 bg-white p-5 space-y-4 max-w-3xl">
       <div>
-        <h3 className="font-semibold text-ink-900">Motor verbinden</h3>
+        <h3 className="font-semibold text-ink-900">Arbeitsplatz verbinden</h3>
         <p className="text-sm text-ink-500 mt-0.5">
-          Verbinden Sie das Finca-Programm auf Ihrem PC mit diesem Konto. Der
-          Motor bearbeitet dann ausschließlich Ihre Suchläufe.
+          Verbinden Sie Ihren Arbeitsplatz-Rechner mit diesem Konto. Danach werden
+          ausschließlich Ihre eigenen Suchläufe bearbeitet.
         </p>
       </div>
 
-      {/* Verbundene Motoren */}
+      {/* Verbundene Arbeitsplaetze */}
       {active.length > 0 && (
         <div className="space-y-2">
           {active.map((a) => {
@@ -90,7 +90,7 @@ export function MotorConnect({ agents }: { agents: Agent[] }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-ink-900 truncate">
-                      {a.label || "Suchlauf-Motor"}
+                      {a.label || "Arbeitsplatz"}
                     </span>
                     <Badge tone={online ? "success" : "neutral"}>
                       {online ? "verbunden" : "offline"}
@@ -129,11 +129,11 @@ export function MotorConnect({ agents }: { agents: Agent[] }) {
             </Button>
           </div>
           <ol className="text-sm text-brand-900/90 list-decimal list-inside space-y-1">
-            <li>Finca-Programm auf dem PC starten.</li>
+            <li>Finca-Programm auf dem Arbeitsplatz-Rechner starten.</li>
             <li>
               Bei der Frage nach dem Kopplungs-Code diesen Code eingeben.
             </li>
-            <li>Fertig — der Motor ist dann dauerhaft mit Ihrem Konto verbunden.</li>
+            <li>Fertig — der Arbeitsplatz bleibt dauerhaft mit Ihrem Konto verbunden.</li>
           </ol>
           <p className="text-xs text-brand-800/70">
             Der Code kann nur einmal verwendet werden. Danach brauchen Sie ihn

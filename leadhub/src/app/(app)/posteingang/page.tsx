@@ -12,6 +12,13 @@ import {
   type Lead,
 } from "@/lib/database.types";
 import { formatEuro, formatRelative } from "@/lib/format";
+import {
+  classifyReply,
+  needsAction,
+  REPLY_KIND_LABEL,
+  REPLY_KIND_TONE,
+  type ReplyKind,
+} from "@/lib/reply-classify";
 
 export const metadata: Metadata = {
   title: "Posteingang",
@@ -21,6 +28,7 @@ type ConversationRow = Lead & {
   latest_seller_text: string | null;
   latest_seller_at: string | null;
   message_count: number;
+  kind: ReplyKind;
 };
 
 function getStr(
@@ -36,27 +44,21 @@ export default async function PosteingangPage(
   props: PageProps<"/posteingang">,
 ) {
   const sp = await props.searchParams;
-  const filter = getStr(sp, "filter") ?? "unread";
+  const filter = getStr(sp, "filter") ?? "todo";
   const supabase = await createClient();
 
   // Alle Leads mit mindestens einer Verkaeufer-Nachricht laden,
   // sortiert nach last_seller_message_at desc
-  let leadsQuery = supabase
+  const { data: leads } = await supabase
     .from("leads")
     .select("*")
     .not("last_seller_message_at", "is", null)
     .order("last_seller_message_at", { ascending: false })
     .limit(200);
-
-  if (filter === "unread") {
-    leadsQuery = leadsQuery.eq("has_unread_seller_message", true);
-  }
-
-  const { data: leads } = await leadsQuery;
   const leadList = (leads ?? []) as Lead[];
 
   // Pro Lead: letzte Verkäufer-Nachricht + Gesamt-Nachrichten-Count
-  const conversations: ConversationRow[] = await Promise.all(
+  const allConversations: ConversationRow[] = await Promise.all(
     leadList.map(async (lead) => {
       const [latestRes, countRes] = await Promise.all([
         supabase
@@ -77,21 +79,24 @@ export default async function PosteingangPage(
         latest_seller_text: latest?.text ?? null,
         latest_seller_at: latest?.created_at ?? lead.last_seller_message_at,
         message_count: countRes.count ?? 0,
+        kind: classifyReply(latest?.text ?? null),
       };
     }),
   );
 
-  // Counts fuer Filter-Tabs
-  const [{ count: countUnread }, { count: countAll }] = await Promise.all([
-    supabase
-      .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("has_unread_seller_message", true),
-    supabase
-      .from("leads")
-      .select("id", { count: "exact", head: true })
-      .not("last_seller_message_at", "is", null),
-  ]);
+  // "Zu bearbeiten" = unbeantwortet UND keine klare Absage. Absagen landen in
+  // einem eigenen Reiter, damit die Zahl oben nur echte Chancen zeigt.
+  const todo = allConversations.filter(
+    (c) => c.has_unread_seller_message && needsAction(c.kind),
+  );
+  const absagen = allConversations.filter((c) => c.kind === "absage");
+
+  const conversations =
+    filter === "absagen" ? absagen : filter === "all" ? allConversations : todo;
+
+  const countTodo = todo.length;
+  const countAbsagen = absagen.length;
+  const countAll = allConversations.length;
 
   return (
     <>
@@ -103,21 +108,30 @@ export default async function PosteingangPage(
       <div className="p-6 lg:p-8 space-y-6">
         {/* Filter-Tabs */}
         <div className="flex items-center gap-2 border-b border-ink-200 pb-3">
-          <FilterTab href="/posteingang?filter=unread" active={filter === "unread"}>
-            Ungelesen{" "}
-            {countUnread !== null && (
+          <FilterTab href="/posteingang?filter=todo" active={filter === "todo"}>
+            Zu bearbeiten{" "}
+            {countTodo > 0 && (
               <span
                 className={`ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold ${
-                  filter === "unread" ? "bg-white text-amber-700" : "bg-amber-500 text-white"
+                  filter === "todo"
+                    ? "bg-brand-600 text-white"
+                    : "bg-ink-200 text-ink-700"
                 }`}
               >
-                {countUnread ?? 0}
+                {countTodo}
               </span>
             )}
           </FilterTab>
+          <FilterTab
+            href="/posteingang?filter=absagen"
+            active={filter === "absagen"}
+          >
+            Absagen{" "}
+            <span className="ml-1.5 text-xs opacity-75">({countAbsagen})</span>
+          </FilterTab>
           <FilterTab href="/posteingang?filter=all" active={filter === "all"}>
             Alle{" "}
-            <span className="ml-1.5 text-xs opacity-75">({countAll ?? 0})</span>
+            <span className="ml-1.5 text-xs opacity-75">({countAll})</span>
           </FilterTab>
         </div>
 
@@ -135,14 +149,18 @@ export default async function PosteingangPage(
                 </svg>
               </div>
               <h2 className="text-lg font-semibold text-ink-900">
-                {filter === "unread"
-                  ? "Keine ungelesenen Antworten"
+                {filter === "todo"
+                  ? "Nichts zu bearbeiten"
+                  : filter === "absagen"
+                  ? "Keine Absagen"
                   : "Noch keine Antworten"}
               </h2>
               <p className="mt-1 text-sm text-ink-500 max-w-md mx-auto">
-                {filter === "unread"
-                  ? "Alle Verkäufer-Antworten sind bearbeitet. Gute Arbeit!"
-                  : "Sobald ein Verkäufer auf eine Bot-Nachricht antwortet, erscheint sie hier."}
+                {filter === "todo"
+                  ? "Alle offenen Verkäufer-Antworten sind bearbeitet. Gute Arbeit!"
+                  : filter === "absagen"
+                  ? "Bisher hat kein Verkäufer abgesagt."
+                  : "Sobald ein Verkäufer auf Ihre Anfrage antwortet, erscheint sie hier."}
               </p>
             </CardBody>
           </Card>
@@ -155,8 +173,8 @@ export default async function PosteingangPage(
                     <Link
                       href={`/leads/${conv.id}`}
                       className={`block px-6 py-4 transition-colors ${
-                        conv.has_unread_seller_message
-                          ? "bg-amber-50/40 hover:bg-amber-50/80"
+                        conv.has_unread_seller_message && needsAction(conv.kind)
+                          ? "bg-brand-50/40 hover:bg-brand-50/70"
                           : "hover:bg-ink-50/60"
                       }`}
                     >
@@ -164,8 +182,8 @@ export default async function PosteingangPage(
                         {/* Avatar */}
                         <div
                           className={`grid place-items-center h-11 w-11 rounded-full shrink-0 font-semibold ${
-                            conv.has_unread_seller_message
-                              ? "bg-amber-500 text-white"
+                            conv.has_unread_seller_message && needsAction(conv.kind)
+                              ? "bg-brand-600 text-white"
                               : "bg-ink-100 text-ink-600"
                           }`}
                         >
@@ -175,18 +193,18 @@ export default async function PosteingangPage(
                         {/* Inhalt */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {conv.has_unread_seller_message && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                                <span className="relative flex h-1.5 w-1.5">
-                                  <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-75 animate-ping" />
-                                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                            {conv.has_unread_seller_message &&
+                              needsAction(conv.kind) && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                  Neu
                                 </span>
-                                NEU
-                              </span>
-                            )}
+                              )}
                             <h3 className="text-sm font-semibold text-ink-900 truncate">
                               {conv.fahrzeug}
                             </h3>
+                            <Badge tone={REPLY_KIND_TONE[conv.kind]}>
+                              {REPLY_KIND_LABEL[conv.kind]}
+                            </Badge>
                             {isCheapestInMarket(conv) && (
                               <CheapestBadge size="sm" />
                             )}
@@ -253,7 +271,7 @@ function FilterTab({
       className={[
         "inline-flex items-center px-3 py-2 -mb-px text-sm font-medium border-b-2 transition-colors",
         active
-          ? "border-amber-500 text-amber-700"
+          ? "border-brand-600 text-brand-700"
           : "border-transparent text-ink-600 hover:text-ink-900",
       ].join(" ")}
     >

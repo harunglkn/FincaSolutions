@@ -132,7 +132,7 @@ export default async function BerichtePage() {
     <>
       <Topbar
         title="Berichte"
-        subtitle="Tagesberichte und Auswertungen — letzte 7 Tage"
+        subtitle="Was bringt Ihnen der Ankauf? Zahlen der letzten 7 Tage"
       />
 
       <div className="p-6 lg:p-8 space-y-6">
@@ -174,7 +174,10 @@ export default async function BerichtePage() {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Erfolgs-Trichter · gesamt</CardTitle>
+              <CardTitle>Vom Kontakt zum Ankauf</CardTitle>
+              <p className="mt-0.5 text-xs text-ink-500">
+                Wie viele Anfragen am Ende zu einem gekauften Fahrzeug führen.
+              </p>
             </CardHeader>
             <CardBody className="space-y-4">
               <FunnelRow
@@ -207,7 +210,11 @@ export default async function BerichtePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Beste Textvarianten</CardTitle>
+              <CardTitle>Welche Ansprache funktioniert am besten?</CardTitle>
+              <p className="mt-0.5 text-xs text-ink-500">
+                Antwortquote je Anschreiben — die beste Formulierung nutzen Sie
+                künftig häufiger.
+              </p>
             </CardHeader>
             <CardBody className="!p-0">
               {variants.length === 0 ? (
