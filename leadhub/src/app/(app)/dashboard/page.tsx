@@ -82,7 +82,7 @@ export default async function DashboardPage() {
       })
       .eq("has_unread_seller_message", true)
       .order("last_seller_message_at", { ascending: false })
-      .limit(10),
+      .limit(5),
     supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
@@ -211,73 +211,6 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {unreadLeads.length > 0 && (
-          <Card className="border-amber-300 bg-gradient-to-br from-amber-50 to-white">
-            <CardHeader className="flex items-center justify-between border-b-amber-200">
-              <div className="flex items-center gap-3">
-                <span className="grid place-items-center h-10 w-10 rounded-full bg-amber-500 text-white shadow-sm">
-                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
-                    <path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-                <div>
-                  <CardTitle>
-                    {unreadLeads.length}{" "}
-                    {unreadLeads.length === 1
-                      ? "neue Verkäufer-Antwort"
-                      : "neue Verkäufer-Antworten"}
-                  </CardTitle>
-                  <p className="text-xs text-amber-800 mt-0.5">
-                    Warten auf deine Bearbeitung. Klick öffnet den Lead und
-                    markiert ihn automatisch als gelesen.
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardBody className="!p-0">
-              <ul className="divide-y divide-amber-100">
-                {unreadLeads.map((l) => (
-                  <li key={l.id} className="px-6 py-3 hover:bg-amber-50/60">
-                    <Link
-                      href={`/leads/${l.id}`}
-                      className="flex items-center gap-4"
-                    >
-                      <span className="relative flex h-2.5 w-2.5 shrink-0">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-ink-900 truncate">
-                          {l.fahrzeug}
-                        </p>
-                        <p className="text-xs text-ink-500 truncate">
-                          {l.verkaeufer_name ?? "Verkäufer"}
-                          {l.last_seller_message_at &&
-                            ` · ${formatRelative(l.last_seller_message_at)}`}
-                        </p>
-                      </div>
-                      {l.ankaufspreis && (
-                        <span className="text-sm font-semibold text-brand-800 shrink-0">
-                          {formatEuro(Number(l.ankaufspreis))}
-                        </span>
-                      )}
-                      <span className="text-brand-700 text-sm font-medium shrink-0">
-                        Öffnen →
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </CardBody>
-          </Card>
-        )}
-
         <GettingStarted steps={onboardingSteps} />
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -308,6 +241,54 @@ export default async function DashboardPage() {
             }
           />
         </section>
+
+        {unreadLeads.length > 0 && (
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <div>
+                <CardTitle>Antworten, die auf Sie warten</CardTitle>
+                <p className="mt-0.5 text-xs text-ink-500">
+                  Klick öffnet den Vorgang und markiert ihn als gelesen.
+                </p>
+              </div>
+              <LinkButton href="/posteingang" variant="ghost" size="sm">
+                Posteingang →
+              </LinkButton>
+            </CardHeader>
+            <CardBody className="!p-0">
+              <ul className="divide-y divide-ink-100">
+                {unreadLeads.map((l) => (
+                  <li key={l.id} className="px-6 py-3 hover:bg-ink-50/60">
+                    <Link
+                      href={`/leads/${l.id}`}
+                      className="flex items-center gap-4"
+                    >
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-brand-600" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-ink-900 truncate">
+                          {l.fahrzeug}
+                        </p>
+                        <p className="text-xs text-ink-500 truncate">
+                          {l.verkaeufer_name ?? "Verkäufer"}
+                          {l.last_seller_message_at &&
+                            ` · ${formatRelative(l.last_seller_message_at)}`}
+                        </p>
+                      </div>
+                      {l.ankaufspreis && (
+                        <span className="text-sm font-semibold text-brand-800 shrink-0">
+                          {formatEuro(Number(l.ankaufspreis))}
+                        </span>
+                      )}
+                      <span className="text-brand-700 text-sm font-medium shrink-0">
+                        Öffnen →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          </Card>
+        )}
 
         {botLeadsToday.length > 0 && (
           <Card>
@@ -394,10 +375,19 @@ export default async function DashboardPage() {
                         <p className="mt-1 text-sm font-medium text-ink-900 truncate">
                           {lead.fahrzeug}
                         </p>
-                        <p className="text-xs text-ink-500">
-                          {lead.verkaeufer_name ?? "—"} ·{" "}
-                          {lead.ort ?? ""}
-                        </p>
+                        {(lead.verkaeufer_name || lead.ort || lead.ankaufspreis) && (
+                          <p className="text-xs text-ink-500">
+                            {[
+                              lead.verkaeufer_name,
+                              lead.ort,
+                              lead.ankaufspreis
+                                ? `Angebot ${formatEuro(Number(lead.ankaufspreis))}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                       </div>
                       <LinkButton
                         href={`/leads/${lead.id}`}
@@ -415,14 +405,20 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Tagesbericht</CardTitle>
+              <CardTitle>Übersicht</CardTitle>
+              <p className="mt-0.5 text-xs text-ink-500">
+                Gesamtstand Ihres Ankaufs
+              </p>
             </CardHeader>
             <CardBody className="space-y-3 text-sm">
               <Row label="Anfragen heute" value={tagesbericht.anfragen} />
-              <Row label="Offene Antworten" value={tagesbericht.offen} />
+              <Row
+                label="Warten auf Rückmeldung"
+                value={tagesbericht.offen}
+              />
               <Row label="Mit Potenzial" value={tagesbericht.potenzial} />
               <Row label="Termine vereinbart" value={tagesbericht.termine} />
-              <Row label="Abgeschlossen" value={tagesbericht.abgeschlossen} emphasis />
+              <Row label="Angekauft" value={tagesbericht.abgeschlossen} emphasis />
             </CardBody>
           </Card>
         </section>
