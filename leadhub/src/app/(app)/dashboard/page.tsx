@@ -133,8 +133,11 @@ export default async function DashboardPage() {
     firma: string | null;
     telefon: string | null;
     adresse: string | null;
+    role: string | null;
   } | null;
-  const onboardingSteps: OnboardingStep[] = [
+  // Kunden sehen die Technik dahinter nicht — nur der Betreiber.
+  const isOperator = profile?.role === "operator";
+  const allOnboardingSteps: OnboardingStep[] = [
     {
       key: "firma",
       done: !!(profile?.firma && profile?.telefon && profile?.adresse),
@@ -153,6 +156,7 @@ export default async function DashboardPage() {
     },
     {
       key: "suchlauf",
+      operatorOnly: true,
       done: (searchCountResult.count ?? 0) > 0,
       title: "Ersten Suchlauf anlegen",
       desc: "Ihre mobile.de-Suche eintragen, nach der automatisch angefragt wird.",
@@ -161,6 +165,7 @@ export default async function DashboardPage() {
     },
     {
       key: "motor",
+      operatorOnly: true,
       done: heartbeats.some((h) => h.worker === "bot"),
       title: "Arbeitsplatz verbinden",
       desc: "Finca auf dem Arbeitsplatz-Rechner starten, damit Anfragen rausgehen.",
@@ -168,6 +173,9 @@ export default async function DashboardPage() {
       cta: "Anleitung",
     },
   ];
+  const onboardingSteps = allOnboardingSteps.filter(
+    (s) => isOperator || !s.operatorOnly,
+  );
 
   // Tagesbericht-Zahlen
   const tagesbericht = {
@@ -187,19 +195,24 @@ export default async function DashboardPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-6">
-        {/* System-Status: laufen Suchlauf und Antwort-Waechter gerade? */}
-        <section className="flex flex-wrap items-center gap-2">
-          <StatusChip
-            label="Suchlauf"
-            active={botStatus.active}
-            lastSeen={botStatus.lastSeen}
-          />
-          <StatusChip
-            label="Antwort-Wächter"
-            active={watcherStatus.active}
-            lastSeen={watcherStatus.lastSeen}
-          />
-          {failedCount > 0 && (
+        {/* System-Status — nur fuer den Betreiber. Kunden sollen von der
+            Technik dahinter nichts sehen. */}
+        <section className="flex flex-wrap items-center gap-2 empty:hidden">
+          {isOperator && (
+            <>
+              <StatusChip
+                label="Suchlauf"
+                active={botStatus.active}
+                lastSeen={botStatus.lastSeen}
+              />
+              <StatusChip
+                label="Antwort-Wächter"
+                active={watcherStatus.active}
+                lastSeen={watcherStatus.lastSeen}
+              />
+            </>
+          )}
+          {isOperator && failedCount > 0 && (
             <span className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-red-200 bg-red-50 text-xs font-medium text-red-800">
               <span className="h-2 w-2 rounded-full bg-red-500" />
               {failedCount}{" "}
@@ -295,11 +308,11 @@ export default async function DashboardPage() {
             <CardHeader className="flex items-center justify-between">
               <div>
                 <CardTitle>
-                  Suchlauf heute · {botLeadsToday.length}{" "}
-                  {botLeadsToday.length === 1 ? "Kontakt" : "Kontakte"}
+                  Heute angefragt · {botLeadsToday.length}{" "}
+                  {botLeadsToday.length === 1 ? "Fahrzeug" : "Fahrzeuge"}
                 </CardTitle>
                 <p className="mt-0.5 text-xs text-ink-500">
-                  Automatisch angeschriebene Fahrzeuge aus Ihren Suchläufen
+                  Fahrzeuge, die heute in Ihrem Namen angefragt wurden
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">

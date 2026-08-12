@@ -4,11 +4,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { classifyReply, needsAction } from "@/lib/reply-classify";
 
+export type UserRole = "operator" | "customer";
+
 export type NavData = {
   firma: string | null;
   email: string | null;
   unread: number;
   todayAppointments: number;
+  /** operator = Betreiber (sieht die Suchlauf-Steuerung), customer = Händler-Kunde */
+  role: UserRole;
 };
 
 export async function getNavData(): Promise<NavData> {
@@ -18,7 +22,13 @@ export async function getNavData(): Promise<NavData> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { firma: null, email: null, unread: 0, todayAppointments: 0 };
+    return {
+      firma: null,
+      email: null,
+      unread: 0,
+      todayAppointments: 0,
+      role: "customer",
+    };
   }
 
   const berlinToday = new Date().toLocaleDateString("en-CA", {
@@ -29,7 +39,7 @@ export async function getNavData(): Promise<NavData> {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("firma")
+        .select("firma, role")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -72,5 +82,6 @@ export async function getNavData(): Promise<NavData> {
     email: user.email ?? null,
     unread,
     todayAppointments: todayCount ?? 0,
+    role: (profile?.role as UserRole) ?? "customer",
   };
 }

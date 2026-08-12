@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { getNavData } from "@/components/layout/nav-data";
-import { mainNav, badgeFor } from "@/components/layout/nav-items";
+import { navForRole, badgeFor } from "@/components/layout/nav-items";
 
 export default async function AppLayout({
   children,
@@ -9,7 +9,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const navData = await getNavData();
-  const mobileItems = mainNav.map((item) => ({
+  const mobileItems = navForRole(navData.role).map((item) => ({
     ...item,
     badge: badgeFor(item.href, navData),
   }));

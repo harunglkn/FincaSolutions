@@ -8,6 +8,8 @@ export type OnboardingStep = {
   desc: string;
   href: string;
   cta: string;
+  /** true = nur für den Betreiber (Kunden sehen die Technik dahinter nicht). */
+  operatorOnly?: boolean;
 };
 
 /**

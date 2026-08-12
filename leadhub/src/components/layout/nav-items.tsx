@@ -19,7 +19,15 @@ export type NavItem = {
   label: string;
   href: string;
   icon: ReactNode;
+  /** true = nur für den Betreiber sichtbar (Kunden sehen die Technik nicht). */
+  operatorOnly?: boolean;
 };
+
+/** Menü passend zur Rolle: Kunden sehen keine Betreiber-Punkte. */
+export function navForRole(role: "operator" | "customer"): NavItem[] {
+  if (role === "operator") return mainNav;
+  return mainNav.filter((item) => !item.operatorOnly);
+}
 
 export const mainNav: NavItem[] = [
   {
@@ -31,6 +39,7 @@ export const mainNav: NavItem[] = [
     label: "Suchlauf",
     href: "/suchlauf",
     icon: <Icon d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12ZM20 20l-4.35-4.35" />,
+    operatorOnly: true,
   },
   {
     label: "Posteingang",

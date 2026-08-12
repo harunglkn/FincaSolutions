@@ -1,6 +1,6 @@
 import { Logo } from "@/components/brand/logo";
 import { NavLink } from "@/components/layout/nav-link";
-import { mainNav, badgeFor } from "@/components/layout/nav-items";
+import { navForRole, badgeFor } from "@/components/layout/nav-items";
 import type { NavData } from "@/components/layout/nav-data";
 
 function initialsFromEmail(email: string | null) {
@@ -13,7 +13,13 @@ function initialsFromEmail(email: string | null) {
   return local.slice(0, 2).toUpperCase();
 }
 
-export function Sidebar({ firma, email, unread, todayAppointments }: NavData) {
+export function Sidebar({
+  firma,
+  email,
+  unread,
+  todayAppointments,
+  role,
+}: NavData) {
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-gradient-to-b from-ink-900 to-ink-950 h-screen sticky top-0">
       <div className="h-16 px-5 flex items-center border-b border-white/10">
@@ -23,7 +29,7 @@ export function Sidebar({ firma, email, unread, todayAppointments }: NavData) {
         <p className="px-3 text-[11px] uppercase tracking-widest font-semibold text-ink-500 mb-2">
           Arbeitsbereich
         </p>
-        {mainNav.map((item) => (
+        {navForRole(role).map((item) => (
           <NavLink
             key={item.href}
             {...item}

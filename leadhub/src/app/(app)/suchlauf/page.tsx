@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardBody } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +13,20 @@ const MOTOR_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 export default async function SuchlaufPage() {
   const supabase = await createClient();
+
+  // Nur der Betreiber sieht die Suchlauf-Steuerung. Kunden bekommen
+  // ausschliesslich die Ergebnisse — auch beim direkten Aufruf der Adresse.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user!.id)
+    .maybeSingle();
+  if (me?.role !== "operator") {
+    redirect("/dashboard");
+  }
 
   const [{ data: profilesData }, { data: hbData }, { data: agentsData }] =
     await Promise.all([
