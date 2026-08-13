@@ -61,6 +61,14 @@ export const mainNav: NavItem[] = [
     ),
   },
   {
+    label: "Kunden",
+    href: "/kunden",
+    icon: (
+      <Icon d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 2.13a4 4 0 0 1 0 7.75" />
+    ),
+    operatorOnly: true,
+  },
+  {
     label: "Berichte",
     href: "/berichte",
     icon: <Icon d="M4 19V5m6 14V9m6 10v-6m4 6H4" />,
