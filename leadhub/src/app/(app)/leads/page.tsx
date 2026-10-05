@@ -93,14 +93,20 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
     const STEP = 1000;
     const slim = "id, angebot_preis, low:bot_meta->comparison_meta->lowest_market_price";
     type SlimRow = { id: string; angebot_preis: unknown; low: unknown };
+    // Erste Seite mit Gesamtzahl, die restlichen Seiten gleichzeitig.
+    const first = await gefiltert(slim, true).range(0, STEP - 1);
+    if (first.error || !first.data) return { leads: [], count: 0 };
+    const total = first.count ?? first.data.length;
+    const rest = [];
+    for (let from = STEP; from < total; from += STEP) {
+      rest.push(gefiltert(slim).range(from, from + STEP - 1));
+    }
+    const pages = [first, ...(await Promise.all(rest))];
     const ids: string[] = [];
-    for (let from = 0; ; from += STEP) {
-      const { data, error } = await gefiltert(slim).range(from, from + STEP - 1);
-      if (error || !data) break;
-      for (const row of data as unknown as SlimRow[]) {
+    for (const page of pages) {
+      for (const row of (page.data ?? []) as unknown as SlimRow[]) {
         if (isCheapestPrice(row.angebot_preis, row.low)) ids.push(row.id);
       }
-      if (data.length < STEP) break;
     }
     if (ids.length === 0) return { leads: [], count: 0 };
     const { data } = await supabase
