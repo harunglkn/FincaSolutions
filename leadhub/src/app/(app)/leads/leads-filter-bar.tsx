@@ -37,6 +37,7 @@ export function LeadsFilterBar({ resultCount }: Props) {
   );
 
   const currentStatus = params.get("status") ?? "all";
+  const nurGuenstigste = params.get("guenstigste") === "1";
 
   // Sync bei Browser-Navigation (zurueck/vor)
   useEffect(() => {
@@ -102,7 +103,13 @@ export function LeadsFilterBar({ resultCount }: Props) {
   }, [jahrVon, jahrBis, kmMax, preisMax]);
 
   const hasAnyFilter =
-    !!q || !!jahrVon || !!jahrBis || !!kmMax || !!preisMax || currentStatus !== "all";
+    !!q ||
+    !!jahrVon ||
+    !!jahrBis ||
+    !!kmMax ||
+    !!preisMax ||
+    currentStatus !== "all" ||
+    nurGuenstigste;
 
   return (
     <div className="space-y-3">
@@ -187,6 +194,38 @@ export function LeadsFilterBar({ resultCount }: Props) {
             {SHORT_BY_STATUS[s] ?? LEAD_STATUS_LABEL[s]}
           </Chip>
         ))}
+
+        <span className="mx-1 w-px self-stretch bg-ink-200" aria-hidden />
+
+        <button
+          type="button"
+          onClick={() => setParam("guenstigste", nurGuenstigste ? "" : "1")}
+          title="Nur Leads, deren Inseratspreis auf oder unter dem günstigsten Marktpreis liegt"
+          aria-pressed={nurGuenstigste}
+          className={[
+            "h-8 px-3 rounded-full text-xs font-semibold border transition-colors inline-flex items-center gap-1.5",
+            nurGuenstigste
+              ? "bg-emerald-600 border-emerald-600 text-white"
+              : "bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50",
+          ].join(" ")}
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" aria-hidden>
+            <path
+              d="M12 2 4 7v6c0 5.5 3.84 9.78 8 11 4.16-1.22 8-5.5 8-11V7l-8-5Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            <path
+              d="m9 12 2 2 4-4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Günstigste
+        </button>
       </div>
 
       {showAdvanced && (

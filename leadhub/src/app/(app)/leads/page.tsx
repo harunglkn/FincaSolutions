@@ -9,6 +9,7 @@ import {
   LEAD_STATUS_LABEL,
   LEAD_STATUS_TONE,
   isCheapestInMarket,
+  isCheapestPrice,
   type Lead,
   type LeadStatus,
 } from "@/lib/database.types";
@@ -52,47 +53,89 @@ export default async function LeadsPage(props: PageProps<"/leads">) {
   const jahrBis = getInt(sp, "jahr_bis");
   const kmMax = getInt(sp, "km_max");
   const preisMax = getInt(sp, "preis_max");
+  const nurGuenstigste = getStr(sp, "guenstigste") === "1";
 
-  let query = supabase
-    .from("leads")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .limit(PAGE_SIZE);
+  // Gleiche Filter fuer die normale Liste und fuer "Guenstigste".
+  function gefiltert(select: string, withCount = false) {
+    let query = supabase
+      .from("leads")
+      .select(select, withCount ? { count: "exact" } : undefined)
+      .order("created_at", { ascending: false });
 
-  if (q) {
-    // ilike auf mehreren Spalten: Fahrzeug, Verkäufer, Ort
-    const escaped = q.replace(/[%_]/g, (m) => `\\${m}`);
-    query = query.or(
-      `fahrzeug.ilike.%${escaped}%,verkaeufer_name.ilike.%${escaped}%,ort.ilike.%${escaped}%`,
-    );
+    if (q) {
+      // ilike auf mehreren Spalten: Fahrzeug, Verkäufer, Ort
+      const escaped = q.replace(/[%_]/g, (m) => `\\${m}`);
+      query = query.or(
+        `fahrzeug.ilike.%${escaped}%,verkaeufer_name.ilike.%${escaped}%,ort.ilike.%${escaped}%`,
+      );
+    }
+
+    if (
+      statusFilter &&
+      statusFilter !== "all" &&
+      (LEAD_STATUSES as string[]).includes(statusFilter)
+    ) {
+      query = query.eq("status", statusFilter as LeadStatus);
+    }
+
+    if (jahrVon !== undefined) query = query.gte("baujahr", jahrVon);
+    if (jahrBis !== undefined) query = query.lte("baujahr", jahrBis);
+    if (kmMax !== undefined) query = query.lte("kilometerstand", kmMax);
+    if (preisMax !== undefined) query = query.lte("ankaufspreis", preisMax);
+    return query;
   }
 
-  if (
-    statusFilter &&
-    statusFilter !== "all" &&
-    (LEAD_STATUSES as string[]).includes(statusFilter)
-  ) {
-    query = query.eq("status", statusFilter as LeadStatus);
+  // "Guenstigster" vergleicht den Inseratspreis mit einem Wert aus bot_meta
+  // (JSON). Diesen Vergleich zweier Felder kann die Datenbank-Abfrage nicht
+  // direkt filtern. Darum: nur die zwei noetigen Werte seitenweise holen,
+  // hier pruefen und danach nur die passenden Leads komplett laden.
+  async function ladeGuenstigste(): Promise<{ leads: Lead[]; count: number }> {
+    const STEP = 1000;
+    const slim = "id, angebot_preis, low:bot_meta->comparison_meta->lowest_market_price";
+    type SlimRow = { id: string; angebot_preis: unknown; low: unknown };
+    const ids: string[] = [];
+    for (let from = 0; ; from += STEP) {
+      const { data, error } = await gefiltert(slim).range(from, from + STEP - 1);
+      if (error || !data) break;
+      for (const row of data as unknown as SlimRow[]) {
+        if (isCheapestPrice(row.angebot_preis, row.low)) ids.push(row.id);
+      }
+      if (data.length < STEP) break;
+    }
+    if (ids.length === 0) return { leads: [], count: 0 };
+    const { data } = await supabase
+      .from("leads")
+      .select("*")
+      .in("id", ids.slice(0, PAGE_SIZE))
+      .order("created_at", { ascending: false });
+    return { leads: (data ?? []) as Lead[], count: ids.length };
   }
 
-  if (jahrVon !== undefined) query = query.gte("baujahr", jahrVon);
-  if (jahrBis !== undefined) query = query.lte("baujahr", jahrBis);
-  if (kmMax !== undefined) query = query.lte("kilometerstand", kmMax);
-  if (preisMax !== undefined) query = query.lte("ankaufspreis", preisMax);
+  async function ladeListe(): Promise<{ leads: Lead[]; count: number }> {
+    const { data, count } = await gefiltert("*", true).limit(PAGE_SIZE);
+    const rows = (data ?? []) as unknown as Lead[];
+    return { leads: rows, count: count ?? rows.length };
+  }
 
   const [leadsResult, campaignsResult, totalResult] = await Promise.all([
-    query,
+    nurGuenstigste ? ladeGuenstigste() : ladeListe(),
     supabase.from("campaigns").select("id, name").order("name"),
     supabase.from("leads").select("id", { count: "exact", head: true }),
   ]);
 
-  const leads = (leadsResult.data ?? []) as Lead[];
-  const filteredCount = leadsResult.count ?? leads.length;
+  const leads = leadsResult.leads;
+  const filteredCount = leadsResult.count;
   const totalCount = totalResult.count ?? 0;
   const campaigns = campaignsResult.data ?? [];
 
   const hasFilters =
-    !!q || !!statusFilter || jahrVon || jahrBis || kmMax || preisMax;
+    !!q ||
+    !!statusFilter ||
+    jahrVon ||
+    jahrBis ||
+    kmMax ||
+    preisMax ||
+    nurGuenstigste;
 
   return (
     <>
