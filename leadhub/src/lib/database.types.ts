@@ -156,10 +156,20 @@ export const LEAD_STATUSES: LeadStatus[] = [
 // gefunden hat. Wenn ja, ist es ein besonders attraktives Inserat
 // (= Schnapper-Potenzial).
 export function isCheapestInMarket(lead: Lead): boolean {
-  const inserat = Number(lead.angebot_preis);
-  const lowest = Number(
+  return isCheapestPrice(
+    lead.angebot_preis,
     lead.bot_meta?.comparison_meta?.lowest_market_price,
   );
+}
+
+// Dieselbe Regel fuer Rohwerte - die Leads-Liste filtert damit, bevor sie
+// die kompletten Leads laedt.
+export function isCheapestPrice(
+  inseratPreis: unknown,
+  lowestMarketPrice: unknown,
+): boolean {
+  const inserat = Number(inseratPreis);
+  const lowest = Number(lowestMarketPrice);
   if (!Number.isFinite(inserat) || inserat <= 0) return false;
   if (!Number.isFinite(lowest) || lowest <= 0) return false;
   return inserat <= lowest;
