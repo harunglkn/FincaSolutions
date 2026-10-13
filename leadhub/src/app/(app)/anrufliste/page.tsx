@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardBody } from "@/components/ui/card";
@@ -17,8 +18,16 @@ export const metadata: Metadata = {
   title: "Anrufliste",
 };
 
-// Angeschrieben in den letzten 7 Tagen: aeltere Inserate sind oft schon weg.
-const TAGE = 7;
+// Ein "Lauf" ist ein Arbeitstag des Bots (alle Leads eines Kalendertags,
+// auch wenn der Bot zwischendurch neu gestartet wurde). Gesucht wird in den
+// letzten 14 Tagen; aeltere Inserate sind meist schon weg.
+const SUCHTAGE = 14;
+const AUSWAHL = {
+  "1": { label: "Letzter Lauf", laeufe: 1 },
+  "2": { label: "Letzte 2 Läufe", laeufe: 2 },
+  "7": { label: "Letzte 7 Tage", laeufe: 7 },
+} as const;
+type Auswahl = keyof typeof AUSWAHL;
 // Nur Leads, die noch niemand bearbeitet hat. Wer "Termin vereinbart",
 // "Abgelehnt" oder "Abgeschlossen" setzt, nimmt den Lead damit von der Liste.
 const OFFENE_STATUS = ["antwort_offen", "hohes_potenzial"];
@@ -79,10 +88,22 @@ const ABSCHNITTE: { stufe: Potenzialstufe; titel: string; text: string }[] = [
 // Zeitpunkt der Anfrage - einmal pro Aufruf, ausserhalb des Renderns.
 function zeitfenster() {
   const jetzt = Date.now();
-  return { jetzt, seit: new Date(jetzt - TAGE * 24 * 60 * 60 * 1000).toISOString() };
+  return { jetzt, seit: new Date(jetzt - SUCHTAGE * 24 * 60 * 60 * 1000).toISOString() };
 }
 
-export default async function AnruflistePage() {
+// Kalendertag in deutscher Zeit, z. B. "2026-10-12".
+function berlinTag(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" });
+}
+
+function kurzDatum(tag: string): string {
+  return `${tag.slice(8, 10)}.${tag.slice(5, 7)}.`;
+}
+
+export default async function AnruflistePage(props: PageProps<"/anrufliste">) {
+  const sp = await props.searchParams;
+  const roh = typeof sp?.lauf === "string" ? sp.lauf : "1";
+  const auswahl: Auswahl = roh in AUSWAHL ? (roh as Auswahl) : "1";
   const supabase = await createClient();
   const { jetzt, seit } = zeitfenster();
 
@@ -108,8 +129,22 @@ export default async function AnruflistePage() {
   const zeilen = seiten.flatMap((s) => (s.data ?? []) as unknown as Zeile[]);
   const fehler = seiten.find((s) => s.error)?.error;
 
+  // Laeufe = die Tage, an denen der Bot Leads mit Marktvergleich angelegt hat.
+  const laufTage = [
+    ...new Set(zeilen.filter((z) => z.anker != null).map((z) => berlinTag(z.created_at))),
+  ].sort((a, b) => b.localeCompare(a));
+  const gewaehlteTage =
+    auswahl === "7"
+      ? new Set(laufTage.filter((t) => t >= berlinTag(new Date(jetzt - 6 * 86_400_000).toISOString())))
+      : new Set(laufTage.slice(0, AUSWAHL[auswahl].laeufe));
+  const zeitraum =
+    gewaehlteTage.size === 0
+      ? "keine Läufe"
+      : [...gewaehlteTage].sort().map(kurzDatum).join(", ");
+
   const eintraege: Eintrag[] = [];
   for (const z of zeilen) {
+    if (!gewaehlteTage.has(berlinTag(z.created_at))) continue;
     // Wer schon einen Termin hat, muss nicht mehr angerufen werden.
     if (z.next_appointment_at && new Date(z.next_appointment_at).getTime() >= jetzt) {
       continue;
@@ -145,17 +180,41 @@ export default async function AnruflistePage() {
     <>
       <Topbar
         title="Anrufliste"
-        subtitle={`${eintraege.length} Fahrzeuge zum Anrufen · Stand ${stand}`}
+        subtitle={`${eintraege.length} Fahrzeuge zum Anrufen · ${AUSWAHL[auswahl].label} (${zeitraum}) · Stand ${stand}`}
       />
 
       <div className="p-6 lg:p-8 space-y-6">
+        <nav className="flex flex-wrap gap-2" aria-label="Zeitraum">
+          {(Object.keys(AUSWAHL) as Auswahl[]).map((key) => {
+            const aktiv = key === auswahl;
+            const tage =
+              key === "7" ? "" : ` (${laufTage.slice(0, AUSWAHL[key].laeufe).sort().map(kurzDatum).join(", ")})`;
+            return (
+              <Link
+                key={key}
+                href={key === "1" ? "/anrufliste" : `/anrufliste?lauf=${key}`}
+                aria-current={aktiv ? "page" : undefined}
+                className={[
+                  "h-9 px-3.5 rounded-full text-sm font-medium border inline-flex items-center transition-colors",
+                  aktiv
+                    ? "bg-brand-700 border-brand-700 text-white"
+                    : "bg-white border-ink-200 text-ink-700 hover:bg-ink-50",
+                ].join(" ")}
+              >
+                {AUSWAHL[key].label}
+                {laufTage.length > 0 && <span className="ml-1 opacity-75">{tage}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
         <Card>
           <CardBody className="space-y-2 text-sm text-ink-600">
             <p>
-              Fahrzeuge, die der Bot in den letzten {TAGE} Tagen angeschrieben
-              hat und die <strong className="text-ink-900">unter dem Marktwert</strong>{" "}
-              inseriert sind. Selbst zum Inseratspreis bliebe noch Luft – ein
-              Anruf lohnt sich.
+              Die guten Fahrzeuge aus den letzten Läufen des Bots: angeschrieben
+              und <strong className="text-ink-900">unter dem Marktwert</strong>{" "}
+              inseriert. Selbst zum Inseratspreis bliebe noch Luft – ein Anruf
+              lohnt sich.
             </p>
             <p>
               <strong className="text-ink-900">Erledigt?</strong> Im Lead den
