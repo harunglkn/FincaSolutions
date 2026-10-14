@@ -15,6 +15,8 @@ import {
   type Lead,
 } from "@/lib/database.types";
 import { formatEuro, formatRelative } from "@/lib/format";
+import { ladeAnrufliste } from "@/lib/anrufliste";
+import { AnruflisteTabelle } from "@/components/anrufliste/anrufliste-tabelle";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -32,6 +34,13 @@ function startOfToday(): string {
 const WORKER_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 type Heartbeat = { worker: string; last_seen_at: string };
+
+// Anrufliste auf dem Dashboard: so viele Zeilen, der Rest unter /anrufliste.
+const ANRUFLISTE_ZEILEN = 15;
+
+function jetztMs() {
+  return Date.now();
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -53,6 +62,7 @@ export default async function DashboardPage() {
     profileResult,
     availabilityCountResult,
     searchCountResult,
+    anrufliste,
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -102,6 +112,7 @@ export default async function DashboardPage() {
     supabase
       .from("search_profiles")
       .select("id", { count: "exact", head: true }),
+    ladeAnrufliste(supabase, "1", jetztMs()),
   ]);
 
   const anfragenHeute = leadsTodayResult.count ?? 0;
@@ -254,6 +265,42 @@ export default async function DashboardPage() {
             }
           />
         </section>
+
+        {anrufliste.eintraege.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>
+                  Heute anrufen · Letzter Lauf ({anrufliste.zeitraum}) ·{" "}
+                  {anrufliste.eintraege.length}{" "}
+                  {anrufliste.eintraege.length === 1 ? "Fahrzeug" : "Fahrzeuge"}
+                </CardTitle>
+                <p className="mt-0.5 text-xs text-ink-500">
+                  Unter Marktwert inseriert. Klick auf das Fahrzeug öffnet das
+                  Inserat bei mobile.de.
+                </p>
+              </div>
+              <LinkButton href="/anrufliste" variant="ghost" size="sm">
+                Ganze Anrufliste →
+              </LinkButton>
+            </CardHeader>
+            <CardBody className="!p-0">
+              <AnruflisteTabelle
+                eintraege={anrufliste.eintraege.slice(0, ANRUFLISTE_ZEILEN)}
+              />
+              {anrufliste.eintraege.length > ANRUFLISTE_ZEILEN && (
+                <div className="px-6 py-3 border-t border-ink-100 text-center">
+                  <Link
+                    href="/anrufliste"
+                    className="text-sm font-medium text-brand-700 hover:underline"
+                  >
+                    Alle {anrufliste.eintraege.length} anzeigen →
+                  </Link>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        )}
 
         {unreadLeads.length > 0 && (
           <Card>
